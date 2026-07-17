@@ -1,0 +1,9 @@
+{
+  "name": "@nexus/config-tailwind",
+  "version": "0.1.0",
+  "private": true,
+  "main": "theme.css",
+  "exports": {
+    ".": "./theme.css"
+  }
+}

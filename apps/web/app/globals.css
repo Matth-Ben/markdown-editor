@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@nexus/config-tailwind";
+@plugin "@tailwindcss/typography";
+@source "../../../packages/ui/src";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}

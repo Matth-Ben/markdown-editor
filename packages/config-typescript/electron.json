@@ -1,0 +1,7 @@
+{
+  "extends": "./base.json",
+  "compilerOptions": {
+    "types": ["electron", "node"],
+    "noEmit": true
+  }
+}

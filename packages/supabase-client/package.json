@@ -1,0 +1,16 @@
+{
+  "name": "@nexus/supabase-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.7"
+  },
+  "devDependencies": {
+    "@nexus/config-typescript": "workspace:*",
+    "@types/node": "^26.1.1"
+  }
+}
