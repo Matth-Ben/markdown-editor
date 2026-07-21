@@ -39,6 +39,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      codex_entries: {
+        Row: {
+          attributes: Json
+          category: string
+          content: string
+          created_at: string
+          id: string
+          name: string
+          story_id: string
+          summary: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attributes?: Json
+          category: string
+          content?: string
+          created_at?: string
+          id?: string
+          name: string
+          story_id: string
+          summary?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attributes?: Json
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          name?: string
+          story_id?: string
+          summary?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "codex_entries_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stories: {
         Row: {
           content: string

@@ -1,3 +1,3 @@
 export * from "./client";
 export * from "./realtime/trigger-channel";
-export type { Database, Tables } from "./database.types";
+export type { Database, Json, Tables } from "./database.types";
