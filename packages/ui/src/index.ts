@@ -3,3 +3,7 @@ export * from "./components/modal";
 export * from "./components/card";
 export * from "./components/ambiance-trigger-button";
 export * from "./components/markdown-content";
+export * from "./components/open5e-detail-content";
+export * from "./components/open5e-search-combobox";
+export * from "./components/open5e-reference-button";
+export * from "./components/markdown-toolbar";

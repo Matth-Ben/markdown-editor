@@ -100,15 +100,19 @@ export function parseCharacterBuilderXml(xmlText: string): CodexEntryInitialValu
 
   const equipment = omitEmpty({
     languages: getAllText(doc, "languages"),
+    // Pas de clé Open5e à l'import : les noms de l'outil source ne correspondent pas
+    // forcément exactement aux entrées Open5e. L'utilisateur peut relier manuellement
+    // via le formulaire d'édition ensuite si besoin.
     spells: [
       ...getAllText(doc, "knownSpell"),
       ...getAllText(doc, "innateSpell"),
       ...getAllText(doc, "knownInvocation"),
-    ],
+    ].map((name) => ({ name })),
     items: getText(doc, "itemX")
       .split(",")
       .map((item) => item.trim())
-      .filter(Boolean),
+      .filter(Boolean)
+      .map((name) => ({ name })),
   });
 
   const classLabelWithLevel = [

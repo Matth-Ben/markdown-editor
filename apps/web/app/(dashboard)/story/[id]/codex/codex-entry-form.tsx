@@ -1,14 +1,26 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { Button } from "@nexus/ui";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Button, MarkdownToolbar, Open5eReferenceButton, Open5eSearchCombobox } from "@nexus/ui";
 import {
   ABILITY_LABELS,
   CODEX_CATEGORIES,
+  getOpen5eDetail,
+  listAllOpen5e,
   type AbilityKey,
   type CodexAttributesByCategory,
   type CodexCategory,
   type CodexEntry,
+  type CodexEquipmentItem,
+  type CodexOpen5eRef,
+  type Open5eClassSummary,
+  type Open5eCreatureDetail,
+  type Open5eCreatureSummary,
+  type Open5eItemSummary,
+  type Open5eKind,
+  type Open5eSearchResult,
+  type Open5eSpeciesSummary,
+  type Open5eSpellSummary,
 } from "@nexus/core";
 import type { CodexActionState } from "./actions";
 
@@ -46,6 +58,10 @@ export function CodexEntryForm({
 }) {
   const seed = entry ?? initialValues;
   const [category, setCategory] = useState<CodexCategory>(seed?.category ?? "pnj");
+  const [name, setName] = useState(seed?.name ?? "");
+  const [summary, setSummary] = useState(seed?.summary ?? "");
+  const [content, setContent] = useState(seed?.content ?? "");
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [state, formAction, isPending] = useActionState(action, initialState);
   const gridClass = compact ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 gap-4 sm:grid-cols-2";
 
@@ -86,14 +102,15 @@ export function CodexEntryForm({
           </select>
         </div>
 
-        <TextField id="name" name="name" label="Nom" defaultValue={seed?.name} required />
+        <TextField id="name" name="name" label="Nom" value={name} onChange={setName} required />
       </div>
 
       <TextField
         id="summary"
         name="summary"
         label="Résumé (affiché dans l'infobulle)"
-        defaultValue={seed?.summary}
+        value={summary}
+        onChange={setSummary}
       />
 
       {category === "joueur" ? (
@@ -104,7 +121,10 @@ export function CodexEntryForm({
         <CategoryFields
           category={category}
           attributes={(seed?.attributes ?? {}) as Record<string, string>}
+          open5eRef={(seed?.attributes as { open5eRef?: CodexOpen5eRef } | undefined)?.open5eRef}
           gridClass={gridClass}
+          onNameChange={setName}
+          onSummaryChange={setSummary}
         />
       )}
 
@@ -112,12 +132,15 @@ export function CodexEntryForm({
         <label htmlFor="content" className="block text-sm text-foreground">
           Notes complètes (Markdown)
         </label>
+        <MarkdownToolbar textareaRef={contentTextareaRef} value={content} onChange={setContent} />
         <textarea
+          ref={contentTextareaRef}
           id="content"
           name="content"
           rows={compact ? 4 : 6}
-          defaultValue={seed?.content}
-          className="w-full rounded-lg border border-white/10 bg-background p-3 font-mono text-sm text-foreground focus-visible:border-accent-cyan"
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          className="w-full rounded-b-lg rounded-t-none border border-white/10 bg-background p-3 font-mono text-sm text-foreground focus-visible:border-accent-cyan"
         />
       </div>
 
@@ -146,8 +169,84 @@ const PLAYER_FORM_TABS = [
 
 type PlayerTabKey = (typeof PLAYER_FORM_TABS)[number]["key"];
 
+function filterByName<T extends { name: string }>(list: T[], query: string): T[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return [];
+  return list.filter((entry) => entry.name.toLowerCase().includes(trimmed)).slice(0, 8);
+}
+
+function Open5eAssistedField<T extends Open5eSearchResult>({
+  id,
+  name,
+  label,
+  value,
+  onChange,
+  kind,
+  fetchResults,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  kind: Open5eKind;
+  fetchResults: (query: string) => Promise<T[]>;
+}) {
+  return (
+    <div className="space-y-1">
+      <label htmlFor={id} className="block text-sm text-foreground">
+        {label}
+      </label>
+      <Open5eSearchCombobox<T>
+        id={id}
+        name={name}
+        kind={kind}
+        placeholder={label}
+        value={value}
+        onValueChange={onChange}
+        fetchResults={fetchResults}
+        onSelect={(result) => onChange(result.name)}
+      />
+    </div>
+  );
+}
+
 function PlayerFields({ attributes }: { attributes: CodexAttributesByCategory["joueur"] }) {
   const [tab, setTab] = useState<PlayerTabKey>("info");
+  const [race, setRace] = useState(attributes.race ?? "");
+  const [characterClass, setCharacterClass] = useState(attributes.characterClass ?? "");
+  const [classPath, setClassPath] = useState(attributes.classPath ?? "");
+  const [speciesList, setSpeciesList] = useState<Open5eSpeciesSummary[]>([]);
+  const [classList, setClassList] = useState<Open5eClassSummary[]>([]);
+
+  // Le filtre `name__icontains` d'Open5e est silencieusement ignoré sur ces deux endpoints
+  // (classes/species) : on récupère la liste complète une fois puis on filtre côté client.
+  useEffect(() => {
+    listAllOpen5e<Open5eSpeciesSummary>("species")
+      .then(setSpeciesList)
+      .catch(() => setSpeciesList([]));
+    listAllOpen5e<Open5eClassSummary>("classes")
+      .then(setClassList)
+      .catch(() => setClassList([]));
+  }, []);
+
+  async function fetchSpecies(query: string) {
+    return filterByName(speciesList, query);
+  }
+
+  async function fetchBaseClasses(query: string) {
+    return filterByName(
+      classList.filter((entry) => !entry.subclass_of),
+      query,
+    );
+  }
+
+  async function fetchSubclasses(query: string) {
+    return filterByName(
+      classList.filter((entry) => entry.subclass_of),
+      query,
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -184,23 +283,32 @@ function PlayerFields({ attributes }: { attributes: CodexAttributesByCategory["j
             label="Nom du joueur"
             defaultValue={attributes.playerName}
           />
-          <TextField
+          <Open5eAssistedField<Open5eSpeciesSummary>
             id="player_race"
             name="player_race"
             label="Race"
-            defaultValue={attributes.race}
+            value={race}
+            onChange={setRace}
+            kind="species"
+            fetchResults={fetchSpecies}
           />
-          <TextField
+          <Open5eAssistedField<Open5eClassSummary>
             id="player_class"
             name="player_class"
             label="Classe"
-            defaultValue={attributes.characterClass}
+            value={characterClass}
+            onChange={setCharacterClass}
+            kind="classes"
+            fetchResults={fetchBaseClasses}
           />
-          <TextField
+          <Open5eAssistedField<Open5eClassSummary>
             id="player_classPath"
             name="player_classPath"
             label="Voie / Sous-classe"
-            defaultValue={attributes.classPath}
+            value={classPath}
+            onChange={setClassPath}
+            kind="classes"
+            fetchResults={fetchSubclasses}
           />
           <TextField
             id="player_level"
@@ -331,19 +439,17 @@ function PlayerFields({ attributes }: { attributes: CodexAttributesByCategory["j
           defaultValue={attributes.equipment?.languages?.join("\n")}
           rows={3}
         />
-        <TextAreaField
-          id="player_spells"
-          name="player_spells"
-          label="Sorts & invocations (un par ligne)"
-          defaultValue={attributes.equipment?.spells?.join("\n")}
-          rows={5}
+        <EquipmentListEditor
+          fieldNamePrefix="player_spells"
+          label="Sorts & invocations"
+          kind="spells"
+          initialItems={attributes.equipment?.spells}
         />
-        <TextAreaField
-          id="player_items"
-          name="player_items"
-          label="Objets (un par ligne)"
-          defaultValue={attributes.equipment?.items?.join("\n")}
-          rows={4}
+        <EquipmentListEditor
+          fieldNamePrefix="player_items"
+          label="Objets"
+          kind="magicitems"
+          initialItems={attributes.equipment?.items}
         />
       </div>
     </div>
@@ -353,41 +459,44 @@ function PlayerFields({ attributes }: { attributes: CodexAttributesByCategory["j
 function CategoryFields({
   category,
   attributes,
+  open5eRef,
   gridClass,
+  onNameChange,
+  onSummaryChange,
 }: {
   category: Exclude<CodexCategory, "joueur">;
   attributes: Record<string, string>;
+  open5eRef?: CodexOpen5eRef;
   gridClass: string;
+  onNameChange: (value: string) => void;
+  onSummaryChange: (value: string) => void;
 }) {
   switch (category) {
     case "pnj":
       return (
-        <div className={gridClass}>
-          <TextField id="attr_role" name="attr_role" label="Rôle" defaultValue={attributes.role} />
-          <TextAreaField
-            id="attr_stats"
-            name="attr_stats"
-            label="Stats"
-            defaultValue={attributes.stats}
-          />
-        </div>
+        <CreatureLinkedFields
+          primaryFieldName="attr_role"
+          primaryFieldLabel="Rôle"
+          primaryDefault={attributes.role}
+          statsDefault={attributes.stats}
+          open5eRefDefault={open5eRef}
+          gridClass={gridClass}
+          onNameChange={onNameChange}
+          onSummaryChange={onSummaryChange}
+        />
       );
     case "bestiaire":
       return (
-        <div className={gridClass}>
-          <TextField
-            id="attr_dangerLevel"
-            name="attr_dangerLevel"
-            label="Niveau de danger"
-            defaultValue={attributes.dangerLevel}
-          />
-          <TextAreaField
-            id="attr_stats"
-            name="attr_stats"
-            label="Stats"
-            defaultValue={attributes.stats}
-          />
-        </div>
+        <CreatureLinkedFields
+          primaryFieldName="attr_dangerLevel"
+          primaryFieldLabel="Niveau de danger"
+          primaryDefault={attributes.dangerLevel}
+          statsDefault={attributes.stats}
+          open5eRefDefault={open5eRef}
+          gridClass={gridClass}
+          onNameChange={onNameChange}
+          onSummaryChange={onSummaryChange}
+        />
       );
     case "lieu":
       return (
@@ -411,19 +520,246 @@ function CategoryFields({
   }
 }
 
+function nameOfRef(value: { name: string } | string | undefined): string | undefined {
+  return typeof value === "string" ? value : value?.name;
+}
+
+function CreatureLinkedFields({
+  primaryFieldName,
+  primaryFieldLabel,
+  primaryDefault,
+  statsDefault,
+  open5eRefDefault,
+  gridClass,
+  onNameChange,
+  onSummaryChange,
+}: {
+  primaryFieldName: string;
+  primaryFieldLabel: string;
+  primaryDefault?: string;
+  statsDefault?: string;
+  open5eRefDefault?: CodexOpen5eRef;
+  gridClass: string;
+  onNameChange: (value: string) => void;
+  onSummaryChange: (value: string) => void;
+}) {
+  const [primaryValue, setPrimaryValue] = useState(primaryDefault ?? "");
+  const [statsValue, setStatsValue] = useState(statsDefault ?? "");
+  const [open5eRef, setOpen5eRef] = useState<CodexOpen5eRef | undefined>(open5eRefDefault);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  async function handleSelect(result: Open5eCreatureSummary) {
+    const type = nameOfRef(result.type);
+    const size = nameOfRef(result.size);
+    const crLabel = result.challenge_rating !== undefined ? `FP ${result.challenge_rating}` : null;
+
+    // Pré-remplissage immédiat avec les données déjà disponibles dans le résultat de recherche.
+    onNameChange(result.name);
+    onSummaryChange([size, type, crLabel].filter(Boolean).join(" · "));
+    setPrimaryValue([type, crLabel].filter(Boolean).join(" — "));
+    setStatsValue(
+      [
+        result.armor_class !== undefined ? `CA ${result.armor_class}` : null,
+        result.hit_points !== undefined ? `PV ${result.hit_points}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    );
+    setOpen5eRef({ kind: "creatures", key: result.key });
+
+    // Puis on enrichit avec le détail complet (vitesse, caractéristiques, perception...).
+    setLoadingDetail(true);
+    try {
+      const detail = await getOpen5eDetail<Open5eCreatureDetail>("creatures", result.key);
+      const abilityLine = detail.ability_scores
+        ? Object.entries(detail.ability_scores)
+            .map(([key, value]) => `${key.slice(0, 3).toUpperCase()} ${value}`)
+            .join(" · ")
+        : null;
+      const speedLine = detail.speed
+        ? Object.entries(detail.speed)
+            .filter(([, value]) => typeof value === "number" && value > 0)
+            .map(([key, value]) => `${key} ${value}ft`)
+            .join(", ")
+        : null;
+
+      setStatsValue(
+        [
+          detail.armor_class !== undefined ? `CA ${detail.armor_class}` : null,
+          detail.hit_points !== undefined ? `PV ${detail.hit_points}` : null,
+          speedLine ? `Vitesse : ${speedLine}` : null,
+          abilityLine,
+          detail.passive_perception !== undefined
+            ? `Perception passive ${detail.passive_perception}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+    } catch {
+      // Le résumé de recherche a déjà été appliqué ci-dessus : on garde ça plutôt que d'échouer.
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <label className="block text-sm text-foreground">Rechercher sur Open5e (optionnel)</label>
+        <Open5eSearchCombobox<Open5eCreatureSummary> kind="creatures" onSelect={handleSelect} />
+        {loadingDetail ? <p className="text-xs text-muted">Récupération des détails…</p> : null}
+      </div>
+
+      {open5eRef ? (
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <input type="hidden" name="attr_open5eKey" value={open5eRef.key} />
+          <input type="hidden" name="attr_open5eKind" value={open5eRef.kind} />
+          Lié à Open5e —{" "}
+          <Open5eReferenceButton kind={open5eRef.kind} entryKey={open5eRef.key} label="Voir le détail" />
+        </div>
+      ) : null}
+
+      <div className={gridClass}>
+        <div className="space-y-1">
+          <label htmlFor="attr-primary-field" className="block text-sm text-foreground">
+            {primaryFieldLabel}
+          </label>
+          <input
+            id="attr-primary-field"
+            name={primaryFieldName}
+            type="text"
+            value={primaryValue}
+            onChange={(event) => setPrimaryValue(event.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-background px-3 py-2 text-foreground focus-visible:border-accent-cyan"
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="attr_stats" className="block text-sm text-foreground">
+            Stats
+          </label>
+          <textarea
+            id="attr_stats"
+            name="attr_stats"
+            rows={3}
+            value={statsValue}
+            onChange={(event) => setStatsValue(event.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-background p-2 text-sm text-foreground focus-visible:border-accent-cyan"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EquipmentListEditor({
+  fieldNamePrefix,
+  label,
+  kind,
+  initialItems,
+}: {
+  fieldNamePrefix: string;
+  label: string;
+  kind: "spells" | "magicitems";
+  initialItems?: CodexEquipmentItem[];
+}) {
+  const [items, setItems] = useState<CodexEquipmentItem[]>(initialItems ?? []);
+  const [manualName, setManualName] = useState("");
+
+  function addItem(item: CodexEquipmentItem) {
+    setItems((previous) => [...previous, item]);
+  }
+
+  function addManual() {
+    const trimmed = manualName.trim();
+    if (!trimmed) return;
+    addItem({ name: trimmed });
+    setManualName("");
+  }
+
+  function removeItem(index: number) {
+    setItems((previous) => previous.filter((_, current) => current !== index));
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm text-foreground">{label}</label>
+
+      <Open5eSearchCombobox<Open5eSpellSummary | Open5eItemSummary>
+        kind={kind}
+        placeholder={`Rechercher ${label.toLowerCase()} sur Open5e…`}
+        onSelect={(result) => addItem({ name: result.name, open5eRef: { kind, key: result.key } })}
+      />
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={manualName}
+          onChange={(event) => setManualName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              addManual();
+            }
+          }}
+          placeholder="Ou ajouter un nom libre…"
+          className="flex-1 rounded-lg border border-white/10 bg-background px-2 py-1.5 text-xs text-foreground focus-visible:border-accent-cyan"
+        />
+        <button
+          type="button"
+          onClick={addManual}
+          className="rounded-lg bg-surface px-2 py-1 text-xs text-foreground hover:bg-white/10"
+        >
+          Ajouter
+        </button>
+      </div>
+
+      <input type="hidden" name={`${fieldNamePrefix}_json`} value={JSON.stringify(items)} />
+
+      {items.length > 0 ? (
+        <ul className="flex flex-wrap gap-1.5">
+          {items.map((item, index) => (
+            <li
+              key={`${item.name}-${index}`}
+              className="flex items-center gap-1 rounded-full border border-white/10 bg-background px-2 py-0.5 text-xs text-foreground"
+            >
+              {item.name}
+              <button
+                type="button"
+                onClick={() => removeItem(index)}
+                aria-label={`Retirer ${item.name}`}
+                className="text-muted hover:text-red-400"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 function TextField({
   id,
   name,
   label,
   defaultValue,
+  value,
+  onChange,
   required,
 }: {
   id: string;
   name: string;
   label: string;
   defaultValue?: string;
+  value?: string;
+  onChange?: (value: string) => void;
   required?: boolean;
 }) {
+  const controlledProps =
+    value !== undefined ? { value, onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value) } : { defaultValue };
+
   return (
     <div className="space-y-1">
       <label htmlFor={id} className="block text-sm text-foreground">
@@ -434,7 +770,7 @@ function TextField({
         name={name}
         type="text"
         required={required}
-        defaultValue={defaultValue}
+        {...controlledProps}
         className="w-full rounded-lg border border-white/10 bg-background px-3 py-2 text-foreground focus-visible:border-accent-cyan"
       />
     </div>

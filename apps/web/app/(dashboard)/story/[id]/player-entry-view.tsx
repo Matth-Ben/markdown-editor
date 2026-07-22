@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { MarkdownContent, type CodexEntrySummary } from "@nexus/ui";
+import { MarkdownContent, Open5eReferenceButton, type CodexEntrySummary } from "@nexus/ui";
 import {
   ABILITY_LABELS,
   type AbilityKey,
   type CodexAttributesByCategory,
   type CodexEntry,
+  type CodexEquipmentItem,
 } from "@nexus/core";
 
 const ABILITY_ORDER: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -254,36 +255,55 @@ function BackgroundTab({
   );
 }
 
+const CHIP_CLASS =
+  "rounded-full border border-white/10 bg-background px-2 py-0.5 text-xs text-foreground";
+
 function EquipmentTab({ equipment }: { equipment?: PlayerAttributes["equipment"] }) {
   if (!equipment) return null;
 
-  const groups: [string, string[] | undefined][] = [
-    ["Langues", equipment.languages],
-    ["Sorts & invocations", equipment.spells],
-    ["Objets", equipment.items],
-  ];
-
   return (
     <div className="space-y-4">
-      {groups.map(([label, items]) =>
-        items && items.length > 0 ? (
-          <div key={label}>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</h4>
-            {/* Chaque élément est déjà isolé dans sa propre <li> : point d'accroche naturel
-                pour un futur lien vers une fiche Codex correspondante (via API). */}
-            <ul className="mt-1 flex flex-wrap gap-1.5">
-              {items.map((item) => (
-                <li
-                  key={item}
-                  className="rounded-full border border-white/10 bg-background px-2 py-0.5 text-xs text-foreground"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null,
-      )}
+      {equipment.languages && equipment.languages.length > 0 ? (
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Langues</h4>
+          <ul className="mt-1 flex flex-wrap gap-1.5">
+            {equipment.languages.map((language) => (
+              <li key={language} className={CHIP_CLASS}>
+                {language}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <EquipmentItemGroup label="Sorts & invocations" items={equipment.spells} />
+      <EquipmentItemGroup label="Objets" items={equipment.items} />
+    </div>
+  );
+}
+
+function EquipmentItemGroup({ label, items }: { label: string; items?: CodexEquipmentItem[] }) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</h4>
+      <ul className="mt-1 flex flex-wrap gap-1.5">
+        {items.map((item, index) => (
+          <li key={`${item.name}-${index}`}>
+            {item.open5eRef ? (
+              <Open5eReferenceButton
+                kind={item.open5eRef.kind}
+                entryKey={item.open5eRef.key}
+                label={item.name}
+                className={`${CHIP_CLASS} hover:border-accent-cyan/60`}
+              />
+            ) : (
+              <span className={CHIP_CLASS}>{item.name}</span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

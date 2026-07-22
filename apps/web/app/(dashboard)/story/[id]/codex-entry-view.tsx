@@ -1,5 +1,5 @@
-import { MarkdownContent, type CodexEntrySummary } from "@nexus/ui";
-import { CODEX_CATEGORIES, type CodexEntry } from "@nexus/core";
+import { MarkdownContent, Open5eReferenceButton, type CodexEntrySummary } from "@nexus/ui";
+import { CODEX_CATEGORIES, type CodexOpen5eRef, type CodexEntry } from "@nexus/core";
 import { PlayerEntryView } from "./player-entry-view";
 
 const ATTRIBUTE_LABELS: Record<string, string> = {
@@ -22,8 +22,11 @@ export function CodexEntryView({
   }
 
   const categoryLabel = CODEX_CATEGORIES.find((c) => c.value === entry.category)?.label ?? entry.category;
-  const attributes = (entry.attributes ?? {}) as Record<string, string>;
-  const attributeEntries = Object.entries(attributes).filter(([, value]) => value);
+  const rawAttributes = (entry.attributes ?? {}) as Record<string, unknown>;
+  const open5eRef = rawAttributes.open5eRef as CodexOpen5eRef | undefined;
+  const attributeEntries = Object.entries(rawAttributes).filter(
+    (pair): pair is [string, string] => pair[0] !== "open5eRef" && Boolean(pair[1]),
+  );
 
   return (
     <div className="space-y-3 rounded-lg border border-white/10 bg-surface p-3">
@@ -33,6 +36,10 @@ export function CodexEntryView({
       </div>
 
       {entry.summary ? <p className="text-xs text-muted">{entry.summary}</p> : null}
+
+      {open5eRef ? (
+        <Open5eReferenceButton kind={open5eRef.kind} entryKey={open5eRef.key} label="Voir sur Open5e" />
+      ) : null}
 
       {attributeEntries.length > 0 ? (
         <dl className="space-y-1 text-xs">

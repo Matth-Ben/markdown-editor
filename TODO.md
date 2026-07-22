@@ -16,6 +16,7 @@ Basé sur le périmètre MVP de [claude.md](claude.md). À compléter librement.
 ## Éditeur & Gestion des médias
 - [x] Zone de saisie Markdown + prévisualisation (vue scindée / onglets)
 - [x] Bloc de déclenchement `:::ambiance{...}`
+- [x] Barre d'outils façon WYSIWYG (titres H1-H3, gras, italique, barré, lien, image, citation, listes, code, ligne horizontale) — éditeur d'histoire + notes du Codex
 - [ ] Glisser-déposer d'images dans le texte
 - [ ]
 
@@ -32,9 +33,11 @@ Basé sur le périmètre MVP de [claude.md](claude.md). À compléter librement.
 - [x] Autocomplétion `[[` pendant la rédaction (suggestions, Tab/Entrée pour compléter)
 - [x] Import de fiche personnage (.xml, format "builder" D&D 5e) → pré-remplit une fiche Joueur
 - [x] Affichage à onglets granulaire pour les fiches Joueur (Info globale avec caractéristiques séparées, Identité/Apparence, Personnalité par champ, Historique, Sorts & équipement en listes), popin plus large (xl)
-- [ ] Lier chaque sort/objet/langue de la fiche Joueur à une fiche Codex correspondante (via API)
 - [x] Filtre par catégorie (dropdown avec compteur), recherche par nom, tri (A→Z, Z→A, récent) dans la sidebar
 - [x] Sélection multiple + actions en masse (déplacer vers une catégorie, supprimer)
+- [x] Intégration API Open5e (creatures/spells/magicitems) : recherche + aperçu au survol à la création (PNJ, Bestiaire, sorts/objets du Joueur), popin de détail au clic sur une fiche déjà liée
+- [x] Recherche/pré-remplissage Open5e (species/classes) pour Race, Classe et Voie/Sous-classe sur la fiche Joueur, avec navigation clavier et aperçu au survol (comme PNJ/Bestiaire)
+- [ ] Étendre l'intégration Open5e à d'autres endpoints (backgrounds, feats, conditions...)
 - [ ] Étendre l'import à d'autres formats/outils de fiche perso
 - [ ]
 

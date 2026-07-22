@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { CodexCategory } from "@nexus/core";
+import type { CodexCategory, CodexEquipmentItem, CodexOpen5eRef } from "@nexus/core";
 import type { Json } from "@nexus/supabase-client";
 
 export type CodexActionState = {
@@ -32,6 +32,27 @@ function splitLines(value: string | null): string[] {
     .filter(Boolean);
 }
 
+function parseEquipmentJson(value: string | null): CodexEquipmentItem[] {
+  if (!value) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is CodexEquipmentItem =>
+        typeof item === "object" && item !== null && typeof (item as { name?: unknown }).name === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+function buildOpen5eRef(formData: FormData, keyField: string, kindField: string): CodexOpen5eRef | undefined {
+  const key = (formData.get(keyField) as string | null)?.trim();
+  const kind = (formData.get(kindField) as string | null)?.trim();
+  if (!key || !kind) return undefined;
+  return { key, kind: kind as CodexOpen5eRef["kind"] };
+}
+
 const ABILITY_KEYS = ["str", "dex", "con", "int", "wis", "cha"] as const;
 
 function buildAttributes(category: CodexCategory, formData: FormData): Record<string, unknown> {
@@ -39,9 +60,17 @@ function buildAttributes(category: CodexCategory, formData: FormData): Record<st
 
   switch (category) {
     case "pnj":
-      return omitEmpty({ role: get("attr_role"), stats: get("attr_stats") });
+      return omitEmpty({
+        role: get("attr_role"),
+        stats: get("attr_stats"),
+        open5eRef: buildOpen5eRef(formData, "attr_open5eKey", "attr_open5eKind"),
+      });
     case "bestiaire":
-      return omitEmpty({ dangerLevel: get("attr_dangerLevel"), stats: get("attr_stats") });
+      return omitEmpty({
+        dangerLevel: get("attr_dangerLevel"),
+        stats: get("attr_stats"),
+        open5eRef: buildOpen5eRef(formData, "attr_open5eKey", "attr_open5eKind"),
+      });
     case "joueur": {
       const abilities = omitEmpty(
         Object.fromEntries(ABILITY_KEYS.map((key) => [key, get(`player_ability_${key}`)])),
@@ -68,8 +97,8 @@ function buildAttributes(category: CodexCategory, formData: FormData): Record<st
       });
       const equipment = omitEmpty({
         languages: splitLines(formData.get("player_languages") as string | null),
-        spells: splitLines(formData.get("player_spells") as string | null),
-        items: splitLines(formData.get("player_items") as string | null),
+        spells: parseEquipmentJson(formData.get("player_spells_json") as string | null),
+        items: parseEquipmentJson(formData.get("player_items_json") as string | null),
       });
 
       return omitEmpty({

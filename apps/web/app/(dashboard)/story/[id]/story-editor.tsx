@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Button, MarkdownContent, type CodexEntrySummary } from "@nexus/ui";
+import { Button, MarkdownContent, MarkdownToolbar, type CodexEntrySummary } from "@nexus/ui";
 import type { CodexEntry } from "@nexus/core";
 import { updateStoryContent, type UpdateStoryState } from "./actions";
 import { CodexSidebar } from "./codex-sidebar";
@@ -250,6 +250,7 @@ function EditorTextarea({
       <label htmlFor="story-content" className="sr-only">
         Contenu Markdown de l&apos;histoire
       </label>
+      <MarkdownToolbar textareaRef={textareaRef} value={content} onChange={onChange} />
       <textarea
         ref={textareaRef}
         id="story-content"
@@ -258,7 +259,7 @@ function EditorTextarea({
         onKeyDown={handleKeyDown}
         onBlur={() => setSuggestion(null)}
         rows={20}
-        className="w-full resize-y rounded-lg border border-white/10 bg-background p-4 font-mono text-sm text-foreground focus-visible:border-accent-cyan"
+        className="w-full resize-y rounded-b-lg rounded-t-none border border-white/10 bg-background p-4 font-mono text-sm text-foreground focus-visible:border-accent-cyan"
       />
 
       {suggestion && matches.length > 0 ? (
