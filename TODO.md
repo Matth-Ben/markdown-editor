@@ -17,6 +17,8 @@ Basé sur le périmètre MVP de [claude.md](claude.md). À compléter librement.
 - [x] Zone de saisie Markdown + prévisualisation (vue scindée / onglets)
 - [x] Bloc de déclenchement `:::ambiance{...}`
 - [x] Barre d'outils façon WYSIWYG (titres H1-H3, gras, italique, barré, lien, image, citation, listes, code, ligne horizontale) — éditeur d'histoire + notes du Codex
+- [x] Image : lien externe (URL) ou import direct depuis l'ordinateur (upload Supabase Storage, bucket `story-content-images`)
+- [x] Nettoyage automatique des images orphelines (Storage) quand elles sont retirées du texte à l'enregistrement, ou quand la fiche/l'histoire qui les contient est supprimée
 - [ ] Glisser-déposer d'images dans le texte
 - [ ]
 

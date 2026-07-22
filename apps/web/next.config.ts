@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname, "..", ".."),
   },
+  experimental: {
+    // Les Server Actions plafonnent à 1 Mo par défaut — trop peu pour l'import d'images
+    // (barre d'outils Markdown), qui uploade le fichier via une Server Action.
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   images: {
     remotePatterns: supabaseHostname
       ? [

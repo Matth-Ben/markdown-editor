@@ -22,6 +22,7 @@ import {
   type Open5eSpeciesSummary,
   type Open5eSpellSummary,
 } from "@nexus/core";
+import { uploadContentImage } from "../actions";
 import type { CodexActionState } from "./actions";
 
 type ActionFn = (prevState: CodexActionState, formData: FormData) => Promise<CodexActionState>;
@@ -72,6 +73,15 @@ export function CodexEntryForm({
     // onSuccess volontairement absent des deps : seule une nouvelle soumission (state) doit redéclencher l'effet.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
+
+  async function handleUploadImage(file: File) {
+    const formData = new FormData();
+    formData.set("storyId", storyId);
+    formData.set("file", file);
+    const result = await uploadContentImage(formData);
+    if ("error" in result) throw new Error(result.error);
+    return result.url;
+  }
 
   return (
     <form
@@ -132,7 +142,12 @@ export function CodexEntryForm({
         <label htmlFor="content" className="block text-sm text-foreground">
           Notes complètes (Markdown)
         </label>
-        <MarkdownToolbar textareaRef={contentTextareaRef} value={content} onChange={setContent} />
+        <MarkdownToolbar
+          textareaRef={contentTextareaRef}
+          value={content}
+          onChange={setContent}
+          onUploadImage={handleUploadImage}
+        />
         <textarea
           ref={contentTextareaRef}
           id="content"

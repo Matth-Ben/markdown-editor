@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button, MarkdownContent, MarkdownToolbar, type CodexEntrySummary } from "@nexus/ui";
 import type { CodexEntry } from "@nexus/core";
-import { updateStoryContent, type UpdateStoryState } from "./actions";
+import { updateStoryContent, uploadContentImage, type UpdateStoryState } from "./actions";
 import { CodexSidebar } from "./codex-sidebar";
 import { getCaretCoordinates } from "./caret-position";
 
@@ -130,6 +130,7 @@ export function StoryEditor({
 
             {activeTab === "edit" ? (
               <EditorTextarea
+                storyId={storyId}
                 content={content}
                 onChange={setContent}
                 codexEntryNames={codexEntryNames}
@@ -143,6 +144,7 @@ export function StoryEditor({
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <EditorTextarea
+              storyId={storyId}
               content={content}
               onChange={setContent}
               codexEntryNames={codexEntryNames}
@@ -160,16 +162,27 @@ export function StoryEditor({
 }
 
 function EditorTextarea({
+  storyId,
   content,
   onChange,
   codexEntryNames,
 }: {
+  storyId: string;
   content: string;
   onChange: (value: string) => void;
   codexEntryNames: string[];
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [suggestion, setSuggestion] = useState<SuggestionState | null>(null);
+
+  async function handleUploadImage(file: File) {
+    const formData = new FormData();
+    formData.set("storyId", storyId);
+    formData.set("file", file);
+    const result = await uploadContentImage(formData);
+    if ("error" in result) throw new Error(result.error);
+    return result.url;
+  }
 
   const matches = suggestion
     ? codexEntryNames
@@ -250,7 +263,12 @@ function EditorTextarea({
       <label htmlFor="story-content" className="sr-only">
         Contenu Markdown de l&apos;histoire
       </label>
-      <MarkdownToolbar textareaRef={textareaRef} value={content} onChange={onChange} />
+      <MarkdownToolbar
+        textareaRef={textareaRef}
+        value={content}
+        onChange={onChange}
+        onUploadImage={handleUploadImage}
+      />
       <textarea
         ref={textareaRef}
         id="story-content"

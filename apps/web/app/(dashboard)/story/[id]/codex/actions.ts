@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { deleteAllContentImages, pruneRemovedContentImages } from "../content-images";
 import type { CodexCategory, CodexEquipmentItem, CodexOpen5eRef } from "@nexus/core";
 import type { Json } from "@nexus/supabase-client";
 
@@ -192,6 +193,13 @@ export async function updateCodexEntry(
   }
 
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("codex_entries")
+    .select("content")
+    .eq("id", entryId)
+    .single();
+
   const { error } = await supabase
     .from("codex_entries")
     .update({
@@ -211,6 +219,10 @@ export async function updateCodexEntry(
     return { error: "Impossible d'enregistrer les modifications." };
   }
 
+  if (existing?.content) {
+    await pruneRemovedContentImages(supabase, existing.content, content);
+  }
+
   revalidateStoryPaths(storyId);
   return { error: null, success: true };
 }
@@ -221,7 +233,18 @@ export async function deleteCodexEntry(formData: FormData): Promise<void> {
   const redirectTo = formData.get("redirectTo") as string | null;
 
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("codex_entries")
+    .select("content")
+    .eq("id", entryId)
+    .single();
+
   await supabase.from("codex_entries").delete().eq("id", entryId);
+
+  if (existing?.content) {
+    await deleteAllContentImages(supabase, existing.content);
+  }
 
   revalidateStoryPaths(storyId);
 
@@ -240,7 +263,16 @@ export async function deleteCodexEntries(formData: FormData): Promise<void> {
   if (entryIds.length === 0) return;
 
   const supabase = await createClient();
+
+  const { data: existingEntries } = await supabase
+    .from("codex_entries")
+    .select("content")
+    .in("id", entryIds);
+
   await supabase.from("codex_entries").delete().in("id", entryIds);
+
+  const combinedContent = (existingEntries ?? []).map((entry) => entry.content ?? "").join("\n");
+  await deleteAllContentImages(supabase, combinedContent);
 
   revalidateStoryPaths(storyId);
 }
