@@ -2,8 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { deleteAllContentImages } from "./story/[id]/content-images";
 
 export type CreateStoryState = {
+  error: string | null;
+};
+
+export type DeleteStoryResult = {
   error: string | null;
 };
 
@@ -56,6 +61,47 @@ export async function createStory(
   if (insertError) {
     return { error: "Impossible de créer l'histoire." };
   }
+
+  revalidatePath("/");
+  return { error: null };
+}
+
+/** Supprime définitivement une histoire (les fiches Codex associées disparaissent en cascade en
+ * base) et nettoie le Storage : couverture + images de contenu de l'histoire et de ses fiches. */
+export async function deleteStory(formData: FormData): Promise<DeleteStoryResult> {
+  const storyId = formData.get("storyId") as string;
+
+  const supabase = await createClient();
+
+  const { data: story } = await supabase
+    .from("stories")
+    .select("content, cover_image_path")
+    .eq("id", storyId)
+    .single();
+
+  if (!story) {
+    return { error: "Cette histoire n'existe plus." };
+  }
+
+  const { data: entries } = await supabase
+    .from("codex_entries")
+    .select("content")
+    .eq("story_id", storyId);
+
+  const { error: deleteError } = await supabase.from("stories").delete().eq("id", storyId);
+
+  if (deleteError) {
+    return { error: "Impossible de supprimer l'histoire." };
+  }
+
+  if (story.cover_image_path) {
+    await supabase.storage.from("story-covers").remove([story.cover_image_path]);
+  }
+
+  const combinedContent = [story.content, ...(entries ?? []).map((entry) => entry.content ?? "")].join(
+    "\n",
+  );
+  await deleteAllContentImages(supabase, combinedContent);
 
   revalidatePath("/");
   return { error: null };

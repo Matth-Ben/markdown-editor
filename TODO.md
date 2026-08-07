@@ -10,8 +10,9 @@ Basé sur le périmètre MVP de [claude.md](claude.md). À compléter librement.
 ## Bibliothèque
 - [x] Grille de cartes (campagnes/scénarios)
 - [x] Upload de couverture (Supabase Storage)
-- [ ] Suppression / modification d'une histoire
-- [ ] Ajouter un clique droit sur la bibliothèque pour avoir Éditer/Modifier/Supprimer/Etc.
+- [x] Modification d'une histoire (titre en édition inline, couverture via popin avec aperçu — depuis l'éditeur)
+- [x] Suppression d'une histoire (fiches Codex + images de contenu + couverture nettoyées)
+- [x] Clic droit (ou bouton ⋮) sur une carte de la bibliothèque : Ouvrir / Supprimer (avec confirmation)
 
 ## Éditeur & Gestion des médias
 - [x] Zone de saisie Markdown + prévisualisation (vue scindée / onglets)
@@ -44,7 +45,9 @@ Basé sur le périmètre MVP de [claude.md](claude.md). À compléter librement.
 - [ ]
 
 ## La Feuille de Route (Mode Session)
-- [ ] Vue lecture seule synchronisée en temps réel
+- [x] Route dédiée `/story/[id]/session` (vue épurée en lecture seule) + bouton de bascule Édition ↔ Feuille de route
+- [x] Sidebar droite : sommaire (ancres vers les titres H1-H3) + liste Codex par catégorie (ouverture d'une fiche en modale avec toutes les infos)
+- [ ] Synchronisation temps réel (Supabase Realtime) — pour l'instant la vue se recharge manuellement
 - [ ] Boutons d'ambiance interactifs (déclenchement réel audio + Hue)
 - [ ] Raccourcis clavier personnalisables (ex: Alt+1)
 - [ ]

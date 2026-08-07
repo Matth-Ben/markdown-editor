@@ -29,6 +29,12 @@ export default async function CodexPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-8">
       <div>
+        <Link
+          href="/"
+          className="block text-sm text-muted underline underline-offset-4 hover:text-foreground"
+        >
+          ← Bibliothèque
+        </Link>
         <Link href={`/story/${storyId}`} className="text-sm text-muted underline underline-offset-4">
           ← {story.title}
         </Link>

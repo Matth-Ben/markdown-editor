@@ -73,7 +73,7 @@ export function MarkdownToolbar({
   }
 
   return (
-    <div className="space-y-1">
+    <div>
       <div
         role="toolbar"
         aria-label="Mise en forme Markdown"
