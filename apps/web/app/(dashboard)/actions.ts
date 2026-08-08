@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { deleteAllContentImages } from "./story/[id]/content-images";
@@ -12,17 +13,12 @@ export type DeleteStoryResult = {
   error: string | null;
 };
 
-export async function createStory(
-  _prevState: CreateStoryState,
-  formData: FormData,
-): Promise<CreateStoryState> {
-  const title = (formData.get("title") as string | null)?.trim();
-  const cover = formData.get("cover") as File | null;
+const DEFAULT_NEW_STORY_TITLE = "Nouvelle histoire";
 
-  if (!title) {
-    return { error: "Merci de donner un titre à ton histoire." };
-  }
-
+/** Crée une histoire brouillon (invisible dans la Bibliothèque tant qu'elle n'est pas publiée) et
+ * ouvre directement son éditeur — le titre, la couverture et le contenu se personnalisent ensuite
+ * depuis la page d'édition, puis « Publier » la rend visible dans la Bibliothèque. */
+export async function createStory(): Promise<CreateStoryState> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,38 +28,17 @@ export async function createStory(
     return { error: "Session expirée, reconnecte-toi." };
   }
 
-  let coverImagePath: string | null = null;
+  const { data: story, error: insertError } = await supabase
+    .from("stories")
+    .insert({ user_id: user.id, title: DEFAULT_NEW_STORY_TITLE, published: false })
+    .select("id")
+    .single();
 
-  if (cover && cover.size > 0) {
-    if (!cover.type.startsWith("image/")) {
-      return { error: "La couverture doit être une image." };
-    }
-
-    const extension = cover.name.split(".").pop() ?? "jpg";
-    const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
-    const { error: uploadError } = await supabase.storage
-      .from("story-covers")
-      .upload(path, cover);
-
-    if (uploadError) {
-      return { error: "Impossible d'envoyer l'image de couverture." };
-    }
-
-    coverImagePath = path;
-  }
-
-  const { error: insertError } = await supabase.from("stories").insert({
-    user_id: user.id,
-    title,
-    cover_image_path: coverImagePath,
-  });
-
-  if (insertError) {
+  if (insertError || !story) {
     return { error: "Impossible de créer l'histoire." };
   }
 
-  revalidatePath("/");
-  return { error: null };
+  redirect(`/story/${story.id}`);
 }
 
 /** Supprime définitivement une histoire (les fiches Codex associées disparaissent en cascade en

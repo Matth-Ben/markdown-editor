@@ -47,6 +47,11 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         <div className="flex min-w-0 items-center gap-3">
           <StoryCover storyId={story.id} coverUrl={coverUrl} />
           <StoryTitle storyId={story.id} title={story.title} />
+          {!story.published ? (
+            <span className="shrink-0 rounded-lg border border-white/20 px-2 py-0.5 text-xs text-muted">
+              Brouillon
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center gap-4">
           <Link
@@ -66,6 +71,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
       <StoryEditor
         storyId={story.id}
         initialContent={story.content}
+        published={story.published}
         entries={(entries ?? []) as CodexEntry[]}
         codexEntries={codexLookup}
       />

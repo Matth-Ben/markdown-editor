@@ -92,6 +92,7 @@ export type Database = {
           cover_image_path: string | null
           created_at: string
           id: string
+          published: boolean
           title: string
           updated_at: string
           user_id: string
@@ -101,6 +102,7 @@ export type Database = {
           cover_image_path?: string | null
           created_at?: string
           id?: string
+          published?: boolean
           title: string
           updated_at?: string
           user_id: string
@@ -110,6 +112,7 @@ export type Database = {
           cover_image_path?: string | null
           created_at?: string
           id?: string
+          published?: boolean
           title?: string
           updated_at?: string
           user_id?: string

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { NewStoryForm } from "./new-story-form";
+import { NewStoryButton } from "./new-story-button";
 import { StoryCard } from "./story-card";
 
 export default async function DashboardPage() {
@@ -7,16 +7,18 @@ export default async function DashboardPage() {
   const { data: stories } = await supabase
     .from("stories")
     .select("*")
+    .eq("published", true)
     .order("created_at", { ascending: false });
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Bibliothèque</h1>
-        <p className="mt-1 text-muted">Tes campagnes et scénarios.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Bibliothèque</h1>
+          <p className="mt-1 text-muted">Tes campagnes et scénarios.</p>
+        </div>
+        <NewStoryButton />
       </div>
-
-      <NewStoryForm />
 
       {stories && stories.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

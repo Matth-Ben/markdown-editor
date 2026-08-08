@@ -22,11 +22,13 @@ const initialState: UpdateStoryState = { error: null };
 export function StoryEditor({
   storyId,
   initialContent,
+  published,
   entries = [],
   codexEntries,
 }: {
   storyId: string;
   initialContent: string;
+  published: boolean;
   entries?: CodexEntry[];
   codexEntries?: Record<string, CodexEntrySummary>;
 }) {
@@ -34,11 +36,21 @@ export function StoryEditor({
   const [layout, setLayout] = useState<Layout>("split");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [state, formAction, isPending] = useActionState(updateStoryContent, initialState);
+  const [isPublished, setIsPublished] = useState(published);
+  const wasPending = useRef(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
     if (stored === "split" || stored === "tabs") setLayout(stored);
   }, []);
+
+  // Passe en "publié" dès que la publication aboutit, sans attendre un rechargement complet.
+  useEffect(() => {
+    if (wasPending.current && !isPending && !state.error) {
+      setIsPublished(true);
+    }
+    wasPending.current = isPending;
+  }, [isPending, state.error]);
 
   function handleLayoutChange(next: Layout) {
     setLayout(next);
@@ -80,7 +92,7 @@ export function StoryEditor({
             <input type="hidden" name="storyId" value={storyId} />
             <input type="hidden" name="content" value={content} />
             <Button type="submit" isLoading={isPending}>
-              {isPending ? "Enregistrement…" : "Enregistrer"}
+              {isPending ? "Publication…" : isPublished ? "Mettre à jour" : "Publier"}
             </Button>
           </form>
         </div>

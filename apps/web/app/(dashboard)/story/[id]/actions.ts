@@ -79,11 +79,11 @@ export async function updateStoryContent(
 
   const { error } = await supabase
     .from("stories")
-    .update({ content, updated_at: new Date().toISOString() })
+    .update({ content, published: true, updated_at: new Date().toISOString() })
     .eq("id", storyId);
 
   if (error) {
-    return { error: "Impossible d'enregistrer les modifications." };
+    return { error: "Impossible de publier l'histoire." };
   }
 
   if (existing?.content) {
@@ -91,6 +91,7 @@ export async function updateStoryContent(
   }
 
   revalidatePath(`/story/${storyId}`);
+  revalidatePath("/");
   return { error: null };
 }
 
