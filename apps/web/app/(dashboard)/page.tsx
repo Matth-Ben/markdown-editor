@@ -22,7 +22,7 @@ export default async function DashboardPage() {
 
       {stories && stories.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {stories.map((story) => (
+          {stories.map((story, index) => (
             <StoryCard
               key={story.id}
               story={story}
@@ -32,6 +32,9 @@ export default async function DashboardPage() {
                       .data.publicUrl
                   : null
               }
+              // La grille passe jusqu'à 4 colonnes (xl:grid-cols-4) : ces cartes sont donc les
+              // seules garanties au-dessus de la ligne de flottaison au premier rendu.
+              eagerLoadCover={index < 4}
             />
           ))}
         </div>

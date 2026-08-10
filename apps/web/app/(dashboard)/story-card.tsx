@@ -7,7 +7,15 @@ import { Button, Card, Modal } from "@nexus/ui";
 import type { Story } from "@nexus/core";
 import { deleteStory } from "./actions";
 
-export function StoryCard({ story, coverUrl }: { story: Story; coverUrl: string | null }) {
+export function StoryCard({
+  story,
+  coverUrl,
+  eagerLoadCover = false,
+}: {
+  story: Story;
+  coverUrl: string | null;
+  eagerLoadCover?: boolean;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +69,7 @@ export function StoryCard({ story, coverUrl }: { story: Story; coverUrl: string 
                 alt=""
                 width={400}
                 height={267}
+                loading={eagerLoadCover ? "eager" : "lazy"}
                 className="h-full w-full object-cover"
               />
             ) : null}
