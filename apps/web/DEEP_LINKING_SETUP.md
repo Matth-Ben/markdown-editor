@@ -6,28 +6,20 @@ navigateur — voir `docs/cahier-des-charges/04-fonctionnalites-app-mobile.md`
 section 7.1, `12-partage-et-groupes.md` section 5.3 et
 `13-depot-versioning-publication.md` section 4 du dépôt mobile.
 
-Les deux fichiers ci-dessous sont déjà en place, avec des valeurs
-placeholder à remplacer une fois les prérequis externes réunis (aucun des
-trois n'existe encore au 2026-08-31 : domaine `nexus-jdr.app` pas hébergé,
-keystore Android release pas généré, compte Apple Developer pas créé).
+État au 2026-09-01 : le keystore Android de production est généré et
+câblé (empreinte SHA-256 renseignée ci-dessous, signature des builds release
+configurée dans `android/app/build.gradle.kts` du dépôt mobile). Il reste 2
+prérequis externes : domaine `nexus-jdr.app` pas encore hébergé, compte
+Apple Developer pas encore créé.
 
 ## `public/.well-known/assetlinks.json` (Android App Links)
 
-**Placeholder à remplacer** : `TODO_REMPLACER_PAR_EMPREINTE_SHA256_KEYSTORE_RELEASE`.
-
-Une fois le keystore de production Android généré (voir
-`13-depot-versioning-publication.md` section 4 du dépôt mobile), extraire
-l'empreinte SHA-256 du certificat avec :
-
-```bash
-keytool -list -v -keystore <chemin-du-keystore-release>.jks -alias <alias>
-```
-
-Copier la valeur `SHA256:` (garder les deux-points) dans le tableau
-`sha256_cert_fingerprints`. Ajouter une deuxième entrée dans ce même tableau
-pour l'empreinte du keystore **debug** (`~/.android/debug.keystore`, mot de
-passe `android`) si on veut aussi tester les liens universels sur des builds
-de développement, pas seulement en production.
+**Fait** — empreinte SHA-256 du keystore de production renseignée. Pour
+aussi tester les liens universels sur des builds de développement (pas
+seulement en production), ajouter une deuxième entrée dans
+`sha256_cert_fingerprints` avec l'empreinte du keystore **debug**
+(`keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey`,
+mot de passe `android`).
 
 ## `app/.well-known/apple-app-site-association/route.ts` (iOS Universal Links)
 
@@ -56,8 +48,8 @@ le compte créé), format `TEAMID.com.nexusjdr.personnages`.
 1. Acheter/pointer le domaine `nexus-jdr.app` vers l'hébergement de cette
    app web (Vercel ou équivalent — voir `output: "standalone"` dans
    `next.config.ts`).
-2. Générer le keystore Android de production (`13-depot-versioning-publication.md`
-   section 4 du dépôt mobile) et remplacer le placeholder ci-dessus.
+2. ~~Générer le keystore Android de production~~ — fait le 2026-09-01,
+   empreinte renseignée dans `assetlinks.json`.
 3. Créer le compte Apple Developer Program et remplacer le placeholder
    `TEAMID` ci-dessus.
 4. Dans Xcode (`ios/Runner.xcworkspace` du dépôt mobile), onglet "Signing &
