@@ -6,11 +6,15 @@ navigateur — voir `docs/cahier-des-charges/04-fonctionnalites-app-mobile.md`
 section 7.1, `12-partage-et-groupes.md` section 5.3 et
 `13-depot-versioning-publication.md` section 4 du dépôt mobile.
 
-État au 2026-09-01 : le keystore Android de production est généré et
-câblé (empreinte SHA-256 renseignée ci-dessous, signature des builds release
-configurée dans `android/app/build.gradle.kts` du dépôt mobile). Il reste 2
-prérequis externes : domaine `nexus-jdr.app` pas encore hébergé, compte
-Apple Developer pas encore créé.
+État au 2026-09-01 : **Android entièrement fonctionnel** — keystore de
+production généré et câblé (signature des builds release configurée dans
+`android/app/build.gradle.kts` du dépôt mobile), domaine `nexus-jdr.app`
+hébergé sur Vercel avec `nexus-jdr.app` (sans www) comme domaine canonique
+(pas de redirection, requis pour la vérification), `assetlinks.json`
+accessible publiquement (le middleware d'authentification l'excluait par
+erreur au départ, corrigé — voir `proxy.ts`). Vérifié via l'API officielle
+Google Digital Asset Links : le statement est bien validé. Il ne reste que
+le compte Apple Developer pour finir le côté iOS.
 
 ## `public/.well-known/assetlinks.json` (Android App Links)
 
@@ -45,9 +49,9 @@ le compte créé), format `TEAMID.com.nexusjdr.personnages`.
 
 ## Ce qui reste à faire côté infra (hors périmètre code)
 
-1. Acheter/pointer le domaine `nexus-jdr.app` vers l'hébergement de cette
-   app web (Vercel ou équivalent — voir `output: "standalone"` dans
-   `next.config.ts`).
+1. ~~Acheter/pointer le domaine `nexus-jdr.app`~~ — fait le 2026-09-01,
+   hébergé sur Vercel, `nexus-jdr.app` (sans www) confirmé comme domaine
+   canonique, `assetlinks.json` vérifié valide via l'API Google.
 2. ~~Générer le keystore Android de production~~ — fait le 2026-09-01,
    empreinte renseignée dans `assetlinks.json`.
 3. Créer le compte Apple Developer Program et remplacer le placeholder
@@ -57,5 +61,5 @@ le compte créé), format `TEAMID.com.nexusjdr.personnages`.
    → référencer `ios/Runner/Runner.entitlements` (déjà présent dans le dépôt,
    contient `applinks:nexus-jdr.app`) — ne peut pas être fait par édition de
    fichier seule, Xcode requis (macOS).
-5. Vérifier les deux plateformes avec les commandes ci-dessus avant la
-   première soumission aux stores.
+5. Vérifier iOS avec la commande ci-dessus avant la première soumission aux
+   stores (Android est déjà vérifié et fonctionnel).
