@@ -12,93 +12,25 @@
 // d'autres fonctions du même projet — pas de précédent dans ce dépôt avant
 // preview-story-invite (deuxième edge function), mais c'est le pattern
 // documenté par Supabase pour ce cas.
+//
+// Les briques génériques (CORS, réponses JSON, config d'environnement,
+// authentification JWT) ont été extraites vers ../_shared/http.ts au moment
+// d'ajouter report-bug (première edge function sans rapport avec le
+// parcours "Rejoindre une histoire") -- réexportées ici pour ne rien casser
+// côté join-story/preview-story-invite, qui continuent d'importer depuis ce
+// fichier sans changement.
 
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { jsonResponse } from "./http.ts";
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-export function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-export interface EnvConfig {
-  supabaseUrl: string;
-  anonKey: string;
-  serviceRoleKey: string;
-}
-
-/** Lit les variables d'environnement Supabase standard, ou null si l'une
- * d'elles manque (mauvaise config du déploiement/du stack local). */
-export function readEnvConfig(): EnvConfig | null {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) return null;
-  return { supabaseUrl, anonKey, serviceRoleKey };
-}
-
-/** Client service_role : contourne RLS. Seule voie légitime pour lire
- * invite_code (jamais exposé via une policy select publique — voir
- * 20260830100000_add_stories_invite_code.sql). */
-export function createAdminClient(config: EnvConfig): SupabaseClient {
-  return createClient(config.supabaseUrl, config.serviceRoleKey, {
-    auth: { persistSession: false },
-  });
-}
-
-export type AuthResult =
-  | { user: { id: string } }
-  | { errorResponse: Response };
-
-/** Authentifie l'appelant à partir du header Authorization de la requête
- * entrante (JWT Supabase). Ne fait jamais confiance à un user id transmis
- * par le corps de la requête — toujours dérivé du JWT côté serveur. */
-export async function authenticateRequest(
-  req: Request,
-  config: EnvConfig,
-): Promise<AuthResult> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
-    return {
-      errorResponse: jsonResponse(
-        { error: "unauthorized", message: "Authentification requise." },
-        401,
-      ),
-    };
-  }
-
-  // Client "au nom de l'appelant" (clé anon + JWT transmis), utilisé
-  // uniquement pour résoudre auth.uid() -> jamais pour lire des données
-  // protégées par RLS (voir findJoinableStory, qui utilise le client
-  // service_role pour ça).
-  const supabaseAuth = createClient(config.supabaseUrl, config.anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser();
-
-  if (error || !user) {
-    return {
-      errorResponse: jsonResponse(
-        { error: "unauthorized", message: "Session invalide ou expirée." },
-        401,
-      ),
-    };
-  }
-
-  return { user };
-}
+export {
+  authenticateRequest,
+  corsHeaders,
+  createAdminClient,
+  jsonResponse,
+  readEnvConfig,
+} from "./http.ts";
+export type { AuthResult, EnvConfig } from "./http.ts";
 
 export interface StoryInviteRow {
   id: string;
