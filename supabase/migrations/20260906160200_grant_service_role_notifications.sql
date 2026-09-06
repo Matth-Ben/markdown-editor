@@ -1,0 +1,32 @@
+-- Chantier "Notifications push/email" (app mobile "Personnages") —
+-- 15-profil-parametres.md section 3.
+--
+-- Même constat que 20260830100200_grant_service_role_join_story.sql :
+-- `service_role` n'a, sur ce projet, aucun privilège explicite de table tant
+-- qu'il n'est pas explicitement accordé — indépendamment du fait qu'il
+-- contourne déjà RLS par construction (clé serveur uniquement, jamais
+-- exposée à un client). Ces GRANTs couvrent les tables lues/écrites par les
+-- nouvelles edge functions internes `send-push-notification`,
+-- `send-rest-reminders` et `send-weekly-digest` (client service_role) :
+--   - `user_push_tokens` : lecture des tokens d'un destinataire, suppression
+--     des tokens que FCM signale invalides/expirés (send-push-notification).
+--   - `notification_preferences` : lecture des préférences (défauts,
+--     seuils de rappel), mise à jour de `last_email_digest_sent_at`
+--     (send-weekly-digest, toujours une ligne existante puisque
+--     `email_digest_enabled = true` implique déjà une ligne écrite par
+--     l'utilisateur) et upsert de `last_rest_reminder_sent_at`
+--     (send-rest-reminders -- upsert car un utilisateur sans ligne
+--     préexistante est un cas courant ici, contrairement à
+--     send-weekly-digest ; `insert` est donc requis en plus de `select`/
+--     `update`, constaté en testant contre le stack local : sans lui,
+--     l'upsert échoue avec "permission denied for table
+--     notification_preferences" dès qu'aucune ligne n'existe encore pour cet
+--     utilisateur).
+--   - `character_level_hp` : lecture des montées de niveau depuis le dernier
+--     résumé (send-weekly-digest).
+-- `public.characters`/`public.stories` ont déjà les GRANTs `service_role`
+-- nécessaires depuis 20260830100200_grant_service_role_join_story.sql (select
+-- sur les deux) — rien à ajouter pour elles ici.
+grant select, delete on table public.user_push_tokens to service_role;
+grant select, insert, update on table public.notification_preferences to service_role;
+grant select on table public.character_level_hp to service_role;
