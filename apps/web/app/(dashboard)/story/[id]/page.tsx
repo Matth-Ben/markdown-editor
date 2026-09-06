@@ -61,6 +61,12 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
             Codex (page dédiée)
           </Link>
           <Link
+            href={`/story/${id}/joueurs`}
+            className="text-sm text-muted underline underline-offset-4 hover:text-foreground"
+          >
+            Joueurs
+          </Link>
+          <Link
             href={`/story/${id}/session`}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-violet px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-violet/90"
           >
