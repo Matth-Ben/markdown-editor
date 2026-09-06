@@ -40,8 +40,16 @@
 //      n'autorise aucun insert direct côté client (voir
 //      20260830100100_create_character_campaigns.sql).
 //   6. Retourne un succès avec l'id de la ligne créée et les infos
-//      minimales de l'histoire (nom, image de couverture) pour que l'app
-//      mobile affiche la confirmation sans requête supplémentaire.
+//      minimales de l'histoire (nom, image de couverture, nom du MJ) pour
+//      que l'app mobile affiche la confirmation sans requête
+//      supplémentaire.
+//
+// gm_display_name (ajouté le 06/09/2026, voir preview-story-invite/index.ts
+// pour le contexte complet) : nom d'affichage du MJ
+// (user_metadata.full_name), ou `null` s'il ne l'a pas renseigné — même
+// donnée, même fonction Postgres (public.stories_gm_display_name) que
+// preview-story-invite, pour rester garantie cohérente entre les deux
+// fonctions.
 
 import {
   authenticateRequest,
@@ -185,6 +193,7 @@ Deno.serve(async (req: Request) => {
       id: story.id,
       title: story.title,
       cover_image_path: story.cover_image_path,
+      gm_display_name: story.gm_display_name,
     },
   });
 });

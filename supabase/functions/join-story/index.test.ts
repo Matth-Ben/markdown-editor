@@ -111,12 +111,13 @@ Deno.test({
     const createdStoryIds: string[] = [];
     const createdCharacterIds: string[] = [];
 
-    async function createUser(label: string) {
+    async function createUser(label: string, fullName?: string) {
       const email = `join-story-test-${label}-${suffix}@example.invalid`;
       const { data, error } = await admin.auth.admin.createUser({
         email,
         password: TEST_PASSWORD,
         email_confirm: true,
+        user_metadata: fullName ? { full_name: fullName } : undefined,
       });
       if (error || !data.user) {
         throw new Error(`Échec création utilisateur de test (${label}): ${error?.message}`);
@@ -161,17 +162,24 @@ Deno.test({
     }
 
     try {
+      // gm : sans nom d'affichage (cas courant -- aucune UI web ne permet
+      // encore de renseigner user_metadata.full_name). gmWithName : l'a
+      // renseigné, pour couvrir le repli inverse sur gm_display_name (voir
+      // 20260906000000_add_stories_gm_display_name.sql).
       const gm = await createUser("gm");
+      const gmWithName = await createUser("gm-named", "Alix Meunier");
       const player = await createUser("player");
       const otherPlayer = await createUser("other-player");
 
       const enabledCode = `EN${suffix}`.toUpperCase().slice(0, 12);
       const disabledCode = `DIS${suffix}`.toUpperCase().slice(0, 12);
       const raceCode = `RACE${suffix}`.toUpperCase().slice(0, 12);
+      const namedGmCode = `NM${suffix}`.toUpperCase().slice(0, 12);
 
       const enabledStoryId = await createStory(gm.id, enabledCode, true);
       const disabledStoryId = await createStory(gm.id, disabledCode, false);
       void disabledStoryId;
+      const namedGmStoryId = await createStory(gmWithName.id, namedGmCode, true);
 
       const playerCharacterId = await createCharacter(player.id, "Test Hero");
       const notOwnedCharacterId = await createCharacter(otherPlayer.id, "Not Mine");
@@ -190,7 +198,25 @@ Deno.test({
         assertExists(body.joined_at);
         assertEquals(body.story.id, enabledStoryId);
         assertEquals(body.story.title, `join-story test ${suffix}`);
+        // MJ sans nom d'affichage renseigné -> null, jamais une chaîne vide
+        // ni un champ absent (cf. index.ts, ajouté le 06/09/2026).
+        assertEquals(body.story.gm_display_name, null);
       });
+
+      await t.step(
+        "code valide, MJ avec un nom d'affichage renseigné -> story.gm_display_name le contient",
+        async () => {
+          const namedGmCharacterId = await createCharacter(player.id, "Named GM Hero");
+          const res = await callJoinStory(
+            { code: namedGmCode, character_id: namedGmCharacterId },
+            playerToken,
+          );
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          assertEquals(body.story.id, namedGmStoryId);
+          assertEquals(body.story.gm_display_name, "Alix Meunier");
+        },
+      );
 
       await t.step("code invalide -> 404 invalid_code", async () => {
         const res = await callJoinStory(

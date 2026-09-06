@@ -64,12 +64,13 @@ Deno.test({
     const createdUserIds: string[] = [];
     const createdStoryIds: string[] = [];
 
-    async function createUser(label: string) {
+    async function createUser(label: string, fullName?: string) {
       const email = `preview-story-invite-test-${label}-${suffix}@example.invalid`;
       const { data, error } = await admin.auth.admin.createUser({
         email,
         password: TEST_PASSWORD,
         email_confirm: true,
+        user_metadata: fullName ? { full_name: fullName } : undefined,
       });
       if (error || !data.user) {
         throw new Error(`Échec création utilisateur de test (${label}): ${error?.message}`);
@@ -102,30 +103,49 @@ Deno.test({
     }
 
     try {
+      // gm : sans nom d'affichage (cas courant, MJ n'utilisant que l'app
+      // web -- aucune UI web ne permet encore de renseigner full_name).
+      // gmWithName : a renseigné user_metadata.full_name (ex. via l'app
+      // mobile, cf. index.ts pour le contexte complet).
       const gm = await createUser("gm");
+      const gmWithName = await createUser("gm-named", "Alix Meunier");
       await createUser("player");
 
       const enabledCode = `PV${suffix}EN`.toUpperCase().slice(0, 12);
       const disabledCode = `PV${suffix}DIS`.toUpperCase().slice(0, 12);
+      const namedGmCode = `PV${suffix}NM`.toUpperCase().slice(0, 12);
 
       await createStory(gm.id, enabledCode, true);
       await createStory(gm.id, disabledCode, false);
+      await createStory(gmWithName.id, namedGmCode, true);
 
       const playerEmail = `preview-story-invite-test-player-${suffix}@example.invalid`;
       const playerToken = await signIn(playerEmail);
 
       await t.step(
-        "code valide -> 200 { title, cover_image_path }, sans character_id",
+        "code valide -> 200 { title, cover_image_path, gm_display_name }, sans character_id",
         async () => {
           const res = await callPreview({ code: enabledCode }, playerToken);
           assertEquals(res.status, 200);
           const body = await res.json();
           assertEquals(body.title, `preview-story-invite test ${suffix}`);
           assertEquals(body.cover_image_path, "covers/test.png");
-          // Aucun engagement pris : pas d'id de rattachement, pas de nom de
-          // MJ (décision produit du 30/08/2026, voir index.ts).
+          // Aucun engagement pris : pas d'id de rattachement.
           assertEquals("character_campaign_id" in body, false);
-          assertEquals("gm_name" in body, false);
+          // MJ sans nom d'affichage renseigné -> null, jamais une chaîne
+          // vide ni un champ absent (cf. note produit du 06/09/2026,
+          // index.ts).
+          assertEquals(body.gm_display_name, null);
+        },
+      );
+
+      await t.step(
+        "code valide, MJ avec un nom d'affichage renseigné -> gm_display_name le contient",
+        async () => {
+          const res = await callPreview({ code: namedGmCode }, playerToken);
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          assertEquals(body.gm_display_name, "Alix Meunier");
         },
       );
 

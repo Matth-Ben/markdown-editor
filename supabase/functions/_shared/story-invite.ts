@@ -37,6 +37,7 @@ export interface StoryInviteRow {
   title: string;
   cover_image_path: string | null;
   invite_code_enabled: boolean;
+  gm_display_name: string | null;
 }
 
 export type FindStoryResult =
@@ -52,9 +53,18 @@ export async function findJoinableStory(
   admin: SupabaseClient,
   code: string,
 ): Promise<FindStoryResult> {
+  // gm_display_name : colonne calculée PostgREST (fonction security definer
+  // public.stories_gm_display_name, voir
+  // 20260906000000_add_stories_gm_display_name.sql) — pas de parenthèses
+  // dans le select, c'est la syntaxe "computed column" reconnue par
+  // PostgREST pour une fonction scalaire prenant la ligne stories en
+  // paramètre unique. Retourne null si le MJ n'a pas renseigné de nom
+  // d'affichage (user_metadata.full_name) ou si celui-ci est vide/blanc :
+  // le repli "null -> pas de nom affiché" est donc déjà porté par la
+  // fonction Postgres, pas dupliqué ici.
   const { data: story, error } = await admin
     .from("stories")
-    .select("id, title, cover_image_path, invite_code_enabled")
+    .select("id, title, cover_image_path, invite_code_enabled, gm_display_name:stories_gm_display_name")
     .eq("invite_code", code)
     .maybeSingle();
 

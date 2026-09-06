@@ -22,16 +22,22 @@
 // Contrat : POST { code: string }, authentifié (même exigence que
 // join-story — l'utilisateur doit être connecté à ce stade du parcours
 // mobile, cf. 04-fonctionnalites-app-mobile.md section 7.1).
-//   200 { title, cover_image_path }
+//   200 { title, cover_image_path, gm_display_name }
 //   404 { error: "invalid_code" }
 //   403 { error: "invite_disabled" }
 //   401 { error: "unauthorized" }
 //
-// Note produit (décision du 30/08/2026, remontée par le chef de projet) :
-// pas de "MJ : {nom}" dans la réponse — aucune notion de profil
-// utilisateur/nom d'affichage n'existe dans ce schéma, et en ajouter une
-// pour ce seul champ secondaire sort du périmètre de ce préalable. Le nom
-// et la couverture de l'histoire suffisent pour l'étape de confirmation.
+// Note produit (mise à jour du 06/09/2026, remplace la décision du
+// 30/08/2026 qui excluait le nom du MJ de la réponse) : ce n'est plus vrai
+// depuis qu'un utilisateur peut renseigner un nom d'affichage via
+// `auth.updateUser({data: {full_name: ...}})` côté app mobile
+// (`user_metadata.full_name`, Supabase Auth standard, partagé entre les
+// deux apps). gm_display_name est ce nom, ou `null` si le MJ ne l'a pas
+// renseigné (cas courant tant qu'aucune UI web ne permet de le faire) —
+// voir 20260906000000_add_stories_gm_display_name.sql pour la fonction
+// Postgres qui porte ce repli. Le mobile doit donc afficher un repli propre
+// (ex. masquer la ligne "MJ") quand ce champ est `null`, jamais une chaîne
+// vide.
 
 import {
   authenticateRequest,
@@ -94,5 +100,6 @@ Deno.serve(async (req: Request) => {
   return jsonResponse({
     title: story.title,
     cover_image_path: story.cover_image_path,
+    gm_display_name: story.gm_display_name,
   });
 });
