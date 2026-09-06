@@ -1,0 +1,36 @@
+-- Chantier "Personnages" (app mobile) — Système de groupe
+-- (12-partage-et-groupes.md section 2, dépôt nexus-jdr-app-mobile).
+-- GRANTs explicites pour `service_role` sur les tables lues/écrites par les
+-- edge functions create-group/join-group/preview-group-invite
+-- (supabase/functions/create-group|join-group|preview-group-invite/).
+--
+-- Même constat que 20260830100200_grant_service_role_join_story.sql (dont ce
+-- fichier reprend exactement la démarche) : `service_role` n'a, sur ce
+-- projet, aucun privilège explicite de table sur `public.groups`/
+-- `public.group_members` -- vérifié contre le stack Supabase local
+-- (`select ... from information_schema.role_table_grants where
+-- grantee='service_role'`, uniquement TRIGGER/TRUNCATE/REFERENCES hérités
+-- par défaut sur ces deux tables, comme documenté pour `authenticated` dans
+-- 20260825091100_grant_authenticated_privileges.sql). `public.characters`
+-- dispose déjà du SELECT nécessaire pour service_role depuis
+-- 20260830100200_grant_service_role_join_story.sql.
+--
+-- `service_role` contourne déjà RLS par construction (clé serveur
+-- uniquement, jamais exposée à un client) : ces GRANTs ne changent donc pas
+-- le modèle de sécurité côté client (toujours aucune policy INSERT pour
+-- `authenticated` sur `groups`/`group_members`, voir
+-- 20260906182601_create_groups.sql), ils corrigent uniquement l'accès du
+-- rôle de confiance côté serveur. GRANT est idempotent : sans effet si le
+-- projet distant `nexus-jdr` accordait déjà ces privilèges par défaut.
+--
+-- `group_treasure` n'est lue/écrite par aucune des trois fonctions
+-- ci-dessus (voir 12-partage-et-groupes.md section 2.2 : "Ajouter une
+-- récompense"/attribution du butin sont des fonctionnalités distinctes, non
+-- construites dans ce chantier) -- aucun GRANT service_role ajouté pour
+-- cette table ici.
+
+-- DELETE sur `groups` : nécessaire au rollback applicatif de create-group
+-- (supprimer la ligne `groups` fraîchement créée si l'insertion group_members
+-- qui suit échoue -- voir le commentaire de create-group/index.ts, étape 6).
+grant select, insert, delete on table public.groups to service_role;
+grant select, insert on table public.group_members to service_role;
