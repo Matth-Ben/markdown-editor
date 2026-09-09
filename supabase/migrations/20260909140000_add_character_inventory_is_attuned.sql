@@ -1,0 +1,25 @@
+-- Harmonisation (attunement) suivie (dépôt nexus-jdr-app-mobile,
+-- docs/cahier-des-charges/11-fonctionnalites-a-ajouter.md, section "Onglet
+-- Inventaire" : "Suivi du nombre d'objets harmonisés (attunement, limite de
+-- 3 en 5e) -- le doc actuel mentionne l'attunement comme info mais pas son
+-- suivi."). `items.requires_attunement` (capacité statique d'un objet du
+-- catalogue) existe déjà -- cette colonne porte l'état *actuel* côté
+-- personnage ("cet exemplaire est-il harmonisé maintenant"), même précédent
+-- que characters.is_dead/is_archived/inspiration/character_spells
+-- .is_favorite : un flag simple, basculé directement par le joueur.
+--
+-- Aucune contrainte CHECK ne garantit is_attuned = false quand
+-- items.requires_attunement est faux (nécessiterait un trigger, la colonne
+-- vit sur une table différente) -- c'est l'application mobile qui ne
+-- propose jamais la bascule dans ce cas, voir
+-- CharacterInventoryItem.isAttuned côté dépôt mobile. La limite de 3 objets
+-- harmonisés simultanément (RAW 5e) n'est pas non plus imposée côté base :
+-- même choix "reste un simple affichage/garde-fou côté UI, sans simulation
+-- des règles complètes" que le reste de ce chantier.
+--
+-- RLS déjà en place sur character_inventory (owner select/insert/update/
+-- delete, 20260825090400_create_character_tables.sql) : aucune policy
+-- supplémentaire nécessaire, la mise à jour de cette colonne passe par la
+-- policy "Owner can update their character_inventory" déjà existante.
+alter table public.character_inventory
+  add column is_attuned boolean not null default false;
