@@ -1,0 +1,2296 @@
+[
+  {
+    "id_temp": "feat_barbare_voie_du_guerrier_totem_qu_teur_spirituel",
+    "class_name": "Barbare",
+    "subclass_name": "Voie du guerrier totem",
+    "level": 3,
+    "name_fr": "Quêteur spirituel",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez lancer les rituels invocation d'animaux ou communication avec les animaux, mais seulement sous forme de rituel."
+  },
+  {
+    "id_temp": "feat_barbare_voie_du_guerrier_totem_esprit_totem",
+    "class_name": "Barbare",
+    "subclass_name": "Voie du guerrier totem",
+    "level": 3,
+    "name_fr": "Esprit totem",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous choisissez un esprit totem (Ours, Aigle ou Loup) qui vous octroie un bénéfice tant que vous êtes en rage : Ours (résistance à tous les dégâts sauf psychiques), Aigle (désavantage aux attaques d'opportunité contre vous et action bonus pour Foncer), ou Loup (vos alliés ont l'avantage aux attaques de mêlée contre une créature à 1,50 m de vous)."
+  },
+  {
+    "id_temp": "feat_barbare_voie_du_guerrier_totem_aspect_de_la_b_te",
+    "class_name": "Barbare",
+    "subclass_name": "Voie du guerrier totem",
+    "level": 6,
+    "name_fr": "Aspect de la bête",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez un bénéfice permanent lié à votre esprit totem, même hors rage : Ours (force portée doublée, avantage aux tests de Force), Aigle (vous voyez jusqu'à 1,6 km sans difficulté et la pénombre ne vous impose pas de désavantage aux tests de Sagesse (Perception) fondés sur la vue), ou Loup (pistage à vitesse normale et déplacement furtif en groupe même à vitesse normale)."
+  },
+  {
+    "id_temp": "feat_barbare_voie_du_guerrier_totem_marcheur_spirituel",
+    "class_name": "Barbare",
+    "subclass_name": "Voie du guerrier totem",
+    "level": 10,
+    "name_fr": "Marcheur spirituel",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez lancer le rituel communion avec la nature ; en le lançant ainsi, vous invoquez à la place un esprit spectral qui prend la forme de votre animal totem pour répondre à vos questions."
+  },
+  {
+    "id_temp": "feat_barbare_voie_du_guerrier_totem_lien_tot_mique",
+    "class_name": "Barbare",
+    "subclass_name": "Voie du guerrier totem",
+    "level": 14,
+    "name_fr": "Lien totémique",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Tant que vous êtes en rage, vous gagnez un bénéfice supplémentaire puissant lié à votre esprit totem : Ours (vos alliés à 9 m gagnent la résistance à tous les dégâts sauf psychiques), Aigle (vitesse de vol égale à la vitesse de marche), ou Loup (vos attaques réussies mettent une grande créature à terre)."
+  },
+  {
+    "id_temp": "feat_barbare_voie_de_la_magie_sauvage_sens_de_la_magie",
+    "class_name": "Barbare",
+    "subclass_name": "Voie de la magie sauvage",
+    "level": 3,
+    "name_fr": "Sens de la magie",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action, vous savez si un sort a été lancé à 18 m de vous au cours du dernier round, sans en connaître l'école ni la source exacte."
+  },
+  {
+    "id_temp": "feat_barbare_voie_de_la_magie_sauvage_sursaut_sauvage",
+    "class_name": "Barbare",
+    "subclass_name": "Voie de la magie sauvage",
+    "level": 3,
+    "name_fr": "Sursaut sauvage",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Chaque fois que vous entrez en rage, vous lancez sur la table Éruption sauvage (d8) pour déclencher un effet magique aléatoire touchant vous-même et les créatures proches."
+  },
+  {
+    "id_temp": "feat_barbare_voie_de_la_magie_sauvage_r_serve_de_magie",
+    "class_name": "Barbare",
+    "subclass_name": "Voie de la magie sauvage",
+    "level": 6,
+    "name_fr": "Réserve de magie",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez dépenser un dé d'Éruption sauvage non utilisé pour donner à une créature à 18 m un avantage à son prochain jet d'attaque, de sauvegarde ou de caractéristique."
+  },
+  {
+    "id_temp": "feat_barbare_voie_de_la_magie_sauvage_r_action_instable",
+    "class_name": "Barbare",
+    "subclass_name": "Voie de la magie sauvage",
+    "level": 10,
+    "name_fr": "Réaction instable",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "En réaction lorsque vous subissez des dégâts d'une attaque ou ratez un jet de sauvegarde alors que vous êtes en rage, vous pouvez relancer sur la table Éruption sauvage."
+  },
+  {
+    "id_temp": "feat_barbare_voie_de_la_magie_sauvage_sursaut_contr_l",
+    "class_name": "Barbare",
+    "subclass_name": "Voie de la magie sauvage",
+    "level": 14,
+    "name_fr": "Sursaut contrôlé",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Lorsque vous lancez sur la table Éruption sauvage, vous pouvez lancer deux fois et choisir l'un des deux résultats."
+  },
+  {
+    "id_temp": "feat_barde_coll_ge_de_la_vaillance_ma_trises_suppl_mentaires",
+    "class_name": "Barde",
+    "subclass_name": "Collège de la vaillance",
+    "level": 3,
+    "name_fr": "Maîtrises supplémentaires",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la maîtrise des armures intermédiaires, des boucliers et des armes de guerre."
+  },
+  {
+    "id_temp": "feat_barde_coll_ge_de_la_vaillance_inspiration_martiale",
+    "class_name": "Barde",
+    "subclass_name": "Collège de la vaillance",
+    "level": 3,
+    "name_fr": "Inspiration martiale",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une créature qui utilise votre dé d'Inspiration bardique sur un jet d'attaque peut ajouter le dé aux dégâts infligés par l'attaque en cas de réussite."
+  },
+  {
+    "id_temp": "feat_barde_coll_ge_de_la_vaillance_attaque_suppl_mentaire",
+    "class_name": "Barde",
+    "subclass_name": "Collège de la vaillance",
+    "level": 6,
+    "name_fr": "Attaque supplémentaire",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez attaquer deux fois, au lieu d'une, chaque fois que vous effectuez l'action Attaquer à votre tour."
+  },
+  {
+    "id_temp": "feat_barde_coll_ge_de_la_vaillance_magie_de_combat",
+    "class_name": "Barde",
+    "subclass_name": "Collège de la vaillance",
+    "level": 14,
+    "name_fr": "Magie de combat",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous utilisez votre action pour lancer un sort de barde, vous pouvez effectuer une attaque avec une arme en action bonus."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_sorts_de_domaine__1",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 1,
+    "name_fr": "Sorts de domaine (Niveau de clerc 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés, gagnés automatiquement à ce niveau de clerc (ne comptent pas dans le nombre de sorts préparés) : Charme-personne, Déguisement."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_sorts_de_domaine__3",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 3,
+    "name_fr": "Sorts de domaine (Niveau de clerc 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Reflets troublants, Passage sans trace."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_sorts_de_domaine__5",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 5,
+    "name_fr": "Sorts de domaine (Niveau de clerc 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Clignotement, Dissipation de la magie."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_sorts_de_domaine__7",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 7,
+    "name_fr": "Sorts de domaine (Niveau de clerc 7)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Porte dimensionnelle, Métamorphose."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_sorts_de_domaine__9",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 9,
+    "name_fr": "Sorts de domaine (Niveau de clerc 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Domination de personne, Modification de la mémoire."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_b_n_diction_de_l_escroc",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 1,
+    "name_fr": "Bénédiction de l'escroc",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par un rituel, vous touchez une créature consentante pour lui accorder l'avantage aux tests de Discrétion pendant 1 heure ; utilisable de nouveau seulement en répétant le rituel (annule l'effet précédent)."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_conduit_divin_invocation_de_r_plique",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 2,
+    "name_fr": "Conduit divin : invocation de réplique",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour créer une illusion parfaite de vous-même qui dure 1 minute et peut se déplacer et parler à votre place."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_conduit_divin_linceul_d_ombre",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 6,
+    "name_fr": "Conduit divin : linceul d'ombre",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action, vous utilisez votre Conduit divin pour devenir invisible jusqu'à la fin de votre prochain tour ; vous redevenez visible si vous attaquez ou lancez un sort."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_frappe_divine",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 8,
+    "name_fr": "Frappe divine",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par tour, vous pouvez ajouter 1d8 dégâts de poison (2d8 au niveau 14) sur une attaque d'arme réussie."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_duperie_r_plique_am_lior_e",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la duperie",
+    "level": 17,
+    "name_fr": "Réplique améliorée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre réplique illusoire (voir Invocation de réplique) peut désormais lancer les sorts que vous lui avez préparés en votre nom, en utilisant vos emplacements de sorts."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_sorts_de_domaine__1",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 1,
+    "name_fr": "Sorts de domaine (Niveau de clerc 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Faveur divine, Bouclier de la foi."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_sorts_de_domaine__3",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 3,
+    "name_fr": "Sorts de domaine (Niveau de clerc 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Arme magique, Arme spirituelle."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_sorts_de_domaine__5",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 5,
+    "name_fr": "Sorts de domaine (Niveau de clerc 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Manteau du croisé, Gardiens spirituels."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_sorts_de_domaine__7",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 7,
+    "name_fr": "Sorts de domaine (Niveau de clerc 7)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Liberté de mouvement, Peau de pierre."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_sorts_de_domaine__9",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 9,
+    "name_fr": "Sorts de domaine (Niveau de clerc 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Frappe flamboyante, Immobilisation de monstre."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_ma_trises_suppl_mentaires",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 1,
+    "name_fr": "Maîtrises supplémentaires",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la maîtrise des armures lourdes et des armes de guerre."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_pr_tre_de_guerre",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 1,
+    "name_fr": "Prêtre de guerre",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous utilisez l'action Attaquer, vous pouvez effectuer une attaque d'arme supplémentaire en action bonus. Utilisable un nombre de fois égal à votre modificateur de Sagesse (minimum 1) par repos long."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_conduit_divin_frappe_guid_e",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 2,
+    "name_fr": "Conduit divin : frappe guidée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour gagner +10 à un jet d'attaque que vous venez d'effectuer, après en avoir vu le résultat mais avant de connaître son issue."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_conduit_divin_b_n_diction_du_dieu_de_la_guerre",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 6,
+    "name_fr": "Conduit divin : bénédiction du dieu de la guerre",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin, en réaction, pour donner à une créature à 9 m un bonus de +10 à un jet d'attaque qu'elle vient d'effectuer."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_frappe_divine",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 8,
+    "name_fr": "Frappe divine",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par tour, vos attaques d'arme infligent 1d8 dégâts supplémentaires du même type que l'arme utilisée (2d8 au niveau 14)."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_guerre_avatar_de_bataille",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la guerre",
+    "level": 17,
+    "name_fr": "Avatar de bataille",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous obtenez la résistance aux dégâts contondants, perforants et tranchants provenant d'armes non magiques."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_sorts_de_domaine__1",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 1,
+    "name_fr": "Sorts de domaine (Niveau de clerc 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Mains brûlantes, Lueurs féeriques."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_sorts_de_domaine__3",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 3,
+    "name_fr": "Sorts de domaine (Niveau de clerc 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Sphère de feu, Rayon ardent."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_sorts_de_domaine__5",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 5,
+    "name_fr": "Sorts de domaine (Niveau de clerc 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Lumière du jour, Boule de feu."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_sorts_de_domaine__7",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 7,
+    "name_fr": "Sorts de domaine (Niveau de clerc 7)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Gardien de la foi, Mur de feu."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_sorts_de_domaine__9",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 9,
+    "name_fr": "Sorts de domaine (Niveau de clerc 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Frappe flamboyante, Scrutation."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_sort_mineur_suppl_mentaire",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 1,
+    "name_fr": "Sort mineur supplémentaire",
+    "choice_type": "sort_mineur_bonus",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous connaissez le cantrip Lumière en plus des cantrips normalement connus à ce niveau."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_illumination_protectrice",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 1,
+    "name_fr": "Illumination protectrice",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "En réaction lorsqu'une créature à 9 m de vous subit des dégâts, vous pouvez réduire ces dégâts de 1d8 + votre niveau de clerc."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_conduit_divin_radiance_de_l_aube",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 2,
+    "name_fr": "Conduit divin : radiance de l'aube",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour libérer une lumière matinale qui inflige 2d10 + votre niveau de clerc dégâts radiants aux ennemis dans un rayon de 9 m et dissipe l'obscurité magique."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_illumination_am_lior_e",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 6,
+    "name_fr": "Illumination améliorée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre trait Illumination protectrice réduit désormais les dégâts de 1d8 + le double de votre niveau de clerc."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_incantation_puissante",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 8,
+    "name_fr": "Incantation puissante",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous ajoutez votre modificateur de Sagesse aux dégâts infligés par les cantrips de clerc."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_lumi_re_halo_de_lumi_re",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la lumière",
+    "level": 17,
+    "name_fr": "Halo de lumière",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous émettez en permanence une lumière vive dans un rayon de 9 m (faible dans 9 m supplémentaires) et vous êtes résistant aux dégâts radiants."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_sorts_de_domaine__1",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 1,
+    "name_fr": "Sorts de domaine (Niveau de clerc 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Amitié avec les animaux, Parole avec les animaux."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_sorts_de_domaine__3",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 3,
+    "name_fr": "Sorts de domaine (Niveau de clerc 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Peau d'écorce, Croissance d'épines."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_sorts_de_domaine__5",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 5,
+    "name_fr": "Sorts de domaine (Niveau de clerc 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Croissance végétale, Marche sur l'eau."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_sorts_de_domaine__7",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 7,
+    "name_fr": "Sorts de domaine (Niveau de clerc 7)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Domination d'animal, Liane agrippante."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_sorts_de_domaine__9",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 9,
+    "name_fr": "Sorts de domaine (Niveau de clerc 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Fléau d'insectes, Passage par les arbres."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_acolyte_de_la_nature",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 1,
+    "name_fr": "Acolyte de la nature",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez un cantrip de druide de votre choix et gagnez la maîtrise d'une compétence parmi Dressage, Nature ou Survie."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_ma_trise_suppl_mentaire",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 1,
+    "name_fr": "Maîtrise supplémentaire",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la maîtrise des armures lourdes."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_conduit_divin_charme_des_animaux_et_des_plantes",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 2,
+    "name_fr": "Conduit divin : charme des animaux et des plantes",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour charmer les bêtes et plantes-monstres dans un rayon de 9 m, chacune devant réussir un jet de sauvegarde de Sagesse ou être charmée pendant 1 minute."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_att_nuation_des_l_ments",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 6,
+    "name_fr": "Atténuation des éléments",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous et vos alliés à 9 m ou moins de vous êtes résistants aux dégâts d'acide, de froid, de feu, de foudre et de tonnerre."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_frappe_divine",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 8,
+    "name_fr": "Frappe divine",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par tour, vous pouvez ajouter 1d8 dégâts (2d8 au niveau 14) d'un type élémentaire (acide, froid, feu, foudre ou tonnerre) sur une attaque d'arme réussie."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_nature_ma_tre_de_la_nature",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la nature",
+    "level": 17,
+    "name_fr": "Maître de la nature",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez à parler, lire et écrire le sylvestre, et les bêtes et plantes-monstres hostiles ont un désavantage aux jets d'attaque contre vous tant qu'elles peuvent vous voir."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_sorts_de_domaine__1",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 1,
+    "name_fr": "Sorts de domaine (Niveau de clerc 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Commandement, Identification."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_sorts_de_domaine__3",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 3,
+    "name_fr": "Sorts de domaine (Niveau de clerc 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Augure, Suggestion."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_sorts_de_domaine__5",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 5,
+    "name_fr": "Sorts de domaine (Niveau de clerc 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Anti-détection, Parler avec les morts."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_sorts_de_domaine__7",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 7,
+    "name_fr": "Sorts de domaine (Niveau de clerc 7)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Œil arcanique, Confusion."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_sorts_de_domaine__9",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 9,
+    "name_fr": "Sorts de domaine (Niveau de clerc 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Connaissance des légendes, Scrutation."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_b_n_dictions_du_savoir",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 1,
+    "name_fr": "Bénédictions du savoir",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la maîtrise de deux compétences parmi Arcanes, Histoire, Nature ou Religion, et vous doublez votre bonus de maîtrise pour ces compétences."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_conduit_divin_savoir_ancestral",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 2,
+    "name_fr": "Conduit divin : savoir ancestral",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour obtenir l'avantage à un test de caractéristique lié à l'Histoire, ou pour gagner la maîtrise d'une compétence pendant 10 minutes."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_conduit_divin_lecture_des_pens_es",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 6,
+    "name_fr": "Conduit divin : lecture des pensées",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour lire les pensées superficielles d'une créature pendant 5 minutes ; vous pouvez ensuite tenter de sonder plus profondément (JdS d'Intelligence) ou implanter un souvenir suggéré."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_incantation_puissante",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 8,
+    "name_fr": "Incantation puissante",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous ajoutez votre modificateur de Sagesse aux dégâts infligés par les cantrips de clerc."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_du_savoir_visions_du_pass",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine du savoir",
+    "level": 17,
+    "name_fr": "Visions du passé",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par un rituel de 1 minute, vous pouvez percevoir des impressions psychiques laissées dans un lieu ou un objet au cours des 10 derniers jours."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_sorts_de_domaine__1",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 1,
+    "name_fr": "Sorts de domaine (Niveau de clerc 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Nuage de brouillard, Onde de choc."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_sorts_de_domaine__3",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 3,
+    "name_fr": "Sorts de domaine (Niveau de clerc 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Rafale de vent, Éclat."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_sorts_de_domaine__5",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 5,
+    "name_fr": "Sorts de domaine (Niveau de clerc 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Appel de la foudre, Tempête de neige fondue."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_sorts_de_domaine__7",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 7,
+    "name_fr": "Sorts de domaine (Niveau de clerc 7)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Contrôle de l'eau, Tempête de grêle."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_sorts_de_domaine__9",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 9,
+    "name_fr": "Sorts de domaine (Niveau de clerc 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Onde destructrice, Fléau d'insectes."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_ma_trises_suppl_mentaires",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 1,
+    "name_fr": "Maîtrises supplémentaires",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la maîtrise des armures lourdes et des armes de guerre."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_fureur_de_l_ouragan",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 1,
+    "name_fr": "Fureur de l'ouragan",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous infligez des dégâts de foudre ou de tonnerre avec un cantrip, vous pouvez ajouter votre modificateur de Sagesse aux dégâts."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_conduit_divin_fureur_destructrice",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 2,
+    "name_fr": "Conduit divin : fureur destructrice",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour transformer vos dégâts de foudre ou de tonnerre en dégâts maximaux le temps d'un tour."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_frappe_de_l_clair",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 6,
+    "name_fr": "Frappe de l'éclair",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous infligez des dégâts de foudre à une créature avec une attaque ou un sort, vous pouvez la repousser de 3 m par une action bonus."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_frappe_divine",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 8,
+    "name_fr": "Frappe divine",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par tour, vous pouvez ajouter 1d8 dégâts (2d8 au niveau 14) de tonnerre sur une attaque d'arme réussie."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_temp_te_enfant_de_la_temp_te",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la tempête",
+    "level": 17,
+    "name_fr": "Enfant de la tempête",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous êtes résistant aux dégâts de foudre et de tonnerre, et vous pouvez voler à votre vitesse de marche pendant votre chute, sans subir de dégâts de chute."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_sorts_de_domaine__1",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 1,
+    "name_fr": "Sorts de domaine (Niveau de clerc 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Identification, Frappe cuisante."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_sorts_de_domaine__3",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 3,
+    "name_fr": "Sorts de domaine (Niveau de clerc 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Métal brûlant, Arme magique."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_sorts_de_domaine__5",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 5,
+    "name_fr": "Sorts de domaine (Niveau de clerc 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Arme élémentaire, Protection contre les éléments."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_sorts_de_domaine__7",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 7,
+    "name_fr": "Sorts de domaine (Niveau de clerc 7)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Fabrication, Mur de feu."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_sorts_de_domaine__9",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 9,
+    "name_fr": "Sorts de domaine (Niveau de clerc 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de domaine toujours préparés : Animation d'objets, Création."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_ma_trises_suppl_mentaires",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 1,
+    "name_fr": "Maîtrises supplémentaires",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la maîtrise des armures lourdes et des outils de forgeron."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_b_n_diction_de_la_forge",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 1,
+    "name_fr": "Bénédiction de la forge",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par un rituel nocturne, vous rendez magique une arme ou une armure non magique (+1 CA ou +1 aux dégâts selon le cas). Cette bénédiction dure jusqu'à ce que vous répétiez le rituel sur un autre objet."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_conduit_divin_b_n_diction_de_l_artisan",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 2,
+    "name_fr": "Conduit divin : bénédiction de l'artisan",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous utilisez votre Conduit divin pour aider un artisan : le jet lié à la fabrication d'un objet non magique gagne un bonus égal à votre modificateur de Sagesse."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge__me_de_la_forge",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 6,
+    "name_fr": "Âme de la forge",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous êtes résistant aux dégâts de feu et vous pouvez ignorer les propriétés désavantageuses d'une armure lourde ou intermédiaire que vous portez (force minimale, désavantage à la Discrétion)."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_frappe_divine",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 8,
+    "name_fr": "Frappe divine",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par tour, vous pouvez ajouter 1d8 dégâts de feu (2d8 au niveau 14) sur une attaque d'arme réussie."
+  },
+  {
+    "id_temp": "feat_clerc_domaine_de_la_forge_saint_de_la_forge_et_du_feu",
+    "class_name": "Clerc",
+    "subclass_name": "Domaine de la forge",
+    "level": 17,
+    "name_fr": "Saint de la forge et du feu",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous êtes immunisé aux dégâts de feu et vous gagnez la résistance aux dégâts contondants, perforants et tranchants provenant d'armes non magiques."
+  },
+  {
+    "id_temp": "feat_druide_cercle_de_la_lune_forme_sauvage_de_combat",
+    "class_name": "Druide",
+    "subclass_name": "Cercle de la lune",
+    "level": 2,
+    "name_fr": "Forme sauvage de combat",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez utiliser votre Forme sauvage comme action bonus (au lieu d'une action) et dépenser des emplacements de sorts pour récupérer des points de vie temporaires en changeant de forme."
+  },
+  {
+    "id_temp": "feat_druide_cercle_de_la_lune_formes_du_cercle",
+    "class_name": "Druide",
+    "subclass_name": "Cercle de la lune",
+    "level": 2,
+    "name_fr": "Formes du cercle",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre Forme sauvage vous permet de prendre l'apparence de bêtes de FP plus élevé que la normale (jusqu'à FP 1 au niveau 2, augmentant avec votre niveau de druide)."
+  },
+  {
+    "id_temp": "feat_druide_cercle_de_la_lune_frappe_primitive",
+    "class_name": "Druide",
+    "subclass_name": "Cercle de la lune",
+    "level": 6,
+    "name_fr": "Frappe primitive",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vos attaques d'armes naturelles sous Forme sauvage sont considérées comme magiques pour outrepasser la résistance et l'immunité aux dégâts non magiques."
+  },
+  {
+    "id_temp": "feat_druide_cercle_de_la_lune_forme_sauvage_l_mentaire",
+    "class_name": "Druide",
+    "subclass_name": "Cercle de la lune",
+    "level": 10,
+    "name_fr": "Forme sauvage élémentaire",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez dépenser deux utilisations de Forme sauvage pour prendre la forme d'un élémentaire (Air, Terre, Eau ou Feu)."
+  },
+  {
+    "id_temp": "feat_druide_cercle_de_la_lune_mille_formes",
+    "class_name": "Druide",
+    "subclass_name": "Cercle de la lune",
+    "level": 14,
+    "name_fr": "Mille formes",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez lancer à volonté le sort déguisement du basilic, sans dépenser d'emplacement de sort."
+  },
+  {
+    "id_temp": "feat_ensorceleur_magie_sauvage_pic_de_magie_sauvage",
+    "class_name": "Ensorceleur",
+    "subclass_name": "Magie sauvage",
+    "level": 1,
+    "name_fr": "Pic de magie sauvage",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Après avoir lancé un sort d'ensorceleur de niveau 1 ou plus, le MJ peut vous faire lancer un d20 : sur un 1, vous déclenchez un effet aléatoire de la table Éruption sauvage."
+  },
+  {
+    "id_temp": "feat_ensorceleur_magie_sauvage_mar_e_du_chaos",
+    "class_name": "Ensorceleur",
+    "subclass_name": "Magie sauvage",
+    "level": 1,
+    "name_fr": "Marée du chaos",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Vous gagnez l'avantage à un jet au prix d'une action bonus, mais le MJ peut ensuite déclencher un effet de la table Éruption sauvage à un moment ultérieur."
+  },
+  {
+    "id_temp": "feat_ensorceleur_magie_sauvage_chance_forc_e",
+    "class_name": "Ensorceleur",
+    "subclass_name": "Magie sauvage",
+    "level": 6,
+    "name_fr": "Chance forcée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par repos long, vous pouvez transformer un échec en réussite lors d'un jet de sauvegarde, mais vous déclenchez alors un effet de la table Éruption sauvage."
+  },
+  {
+    "id_temp": "feat_ensorceleur_magie_sauvage_chaos_contr_l",
+    "class_name": "Ensorceleur",
+    "subclass_name": "Magie sauvage",
+    "level": 14,
+    "name_fr": "Chaos contrôlé",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous déclenchez un effet de la table Éruption sauvage, vous pouvez lancer deux fois et choisir l'un des deux résultats."
+  },
+  {
+    "id_temp": "feat_ensorceleur_magie_sauvage_bombardement_de_sort",
+    "class_name": "Ensorceleur",
+    "subclass_name": "Magie sauvage",
+    "level": 18,
+    "name_fr": "Bombardement de sort",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous infligez des dégâts avec un sort d'ensorceleur et obtenez le résultat le plus bas possible sur au moins un dé de dégâts, vous pouvez relancer ce dé, potentiellement plusieurs fois en chaîne."
+  },
+  {
+    "id_temp": "feat_guerrier_ma_tre_de_guerre_disciple_martial",
+    "class_name": "Guerrier",
+    "subclass_name": "Maître de guerre",
+    "level": 3,
+    "name_fr": "Disciple martial",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez trois manœuvres de combat de votre choix et gagnez des dés de supériorité (d8) pour les alimenter."
+  },
+  {
+    "id_temp": "feat_guerrier_ma_tre_de_guerre_sup_riorit_martiale",
+    "class_name": "Guerrier",
+    "subclass_name": "Maître de guerre",
+    "level": 3,
+    "name_fr": "Supériorité martiale",
+    "choice_type": "manoeuvre",
+    "uses_per_rest": {
+      "amount": 4,
+      "rest_type": "repos_court"
+    },
+    "description_originale_proposee": "Vous disposez de 4 dés de supériorité (d8), qui augmentent en nombre et en taille à des niveaux supérieurs ; vous les regagnez tous en terminant un repos court ou long."
+  },
+  {
+    "id_temp": "feat_guerrier_ma_tre_de_guerre_observation_de_l_ennemi",
+    "class_name": "Guerrier",
+    "subclass_name": "Maître de guerre",
+    "level": 7,
+    "name_fr": "Observation de l’ennemi",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action bonus, vous pouvez étudier une créature visible pour en apprendre les forces et faiblesses relatives (une des six caractéristiques la plus haute/basse, ou immunités/résistances/vulnérabilités)."
+  },
+  {
+    "id_temp": "feat_guerrier_ma_tre_de_guerre_sup_riorit_martiale_am_lior_e",
+    "class_name": "Guerrier",
+    "subclass_name": "Maître de guerre",
+    "level": 10,
+    "name_fr": "Supériorité martiale améliorée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vos dés de supériorité passent au d10, puis au d12 au niveau 18."
+  },
+  {
+    "id_temp": "feat_guerrier_ma_tre_de_guerre_implacable",
+    "class_name": "Guerrier",
+    "subclass_name": "Maître de guerre",
+    "level": 15,
+    "name_fr": "Implacable",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous ratez un jet d'attaque avec une arme lors de votre tour, vous pouvez, une fois par repos court ou long, refaire immédiatement le jet."
+  },
+  {
+    "id_temp": "feat_guerrier_ma_tre_de_guerre_man_uvres",
+    "class_name": "Guerrier",
+    "subclass_name": "Maître de guerre",
+    "level": 3,
+    "name_fr": "Manœuvres",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous choisissez des manœuvres martiales parmi une liste (ex. Attaque précise, Feinte, Parade...) qui ajoutent un effet spécial en dépensant un dé de supériorité, avec un DD de sauvegarde égal à 8 + bonus de maîtrise + modificateur de Force ou Dextérité."
+  },
+  {
+    "id_temp": "feat_guerrier_chevalier_occulte_incantation",
+    "class_name": "Guerrier",
+    "subclass_name": "Chevalier occulte",
+    "level": 3,
+    "name_fr": "Incantation",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez à lancer des sorts de magicien (école d'évocation et d'abjuration principalement), en utilisant l'Intelligence comme caractéristique d'incantation, avec une progression de sorts lente (un tiers du niveau de guerrier)."
+  },
+  {
+    "id_temp": "feat_guerrier_chevalier_occulte_lien_avec_une_arme",
+    "class_name": "Guerrier",
+    "subclass_name": "Chevalier occulte",
+    "level": 3,
+    "name_fr": "Lien avec une arme",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous liez rituellement une arme à vous-même : vous ne pouvez pas en être désarmé sans le vouloir et pouvez la faire apparaître en main par une action bonus si elle se trouve sur le même plan d'existence."
+  },
+  {
+    "id_temp": "feat_guerrier_chevalier_occulte_magie_de_guerre",
+    "class_name": "Guerrier",
+    "subclass_name": "Chevalier occulte",
+    "level": 7,
+    "name_fr": "Magie de guerre",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous utilisez votre action pour lancer un cantrip, vous pouvez effectuer une attaque avec une arme en action bonus."
+  },
+  {
+    "id_temp": "feat_guerrier_chevalier_occulte_frappe_occulte",
+    "class_name": "Guerrier",
+    "subclass_name": "Chevalier occulte",
+    "level": 10,
+    "name_fr": "Frappe occulte",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par tour, quand vous touchez une créature avec votre arme liée, vous pouvez la piéger magiquement (JdS d'Intelligence) lui imposant un désavantage aux jets de sauvegarde contre vos sorts jusqu'à la fin de votre prochain tour."
+  },
+  {
+    "id_temp": "feat_guerrier_chevalier_occulte_charge_arcanique",
+    "class_name": "Guerrier",
+    "subclass_name": "Chevalier occulte",
+    "level": 15,
+    "name_fr": "Charge arcanique",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous utilisez Fougue guerrière, vous pouvez vous téléporter jusqu'à 9 m vers un espace inoccupé visible avant ou après chaque attaque supplémentaire."
+  },
+  {
+    "id_temp": "feat_guerrier_chevalier_occulte_magie_de_guerre_am_lior_e",
+    "class_name": "Guerrier",
+    "subclass_name": "Chevalier occulte",
+    "level": 18,
+    "name_fr": "Magie de guerre améliorée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous utilisez votre action pour lancer un sort de magicien, vous pouvez effectuer une attaque avec une arme en action bonus."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_abjuration_abjurateur_rudit",
+    "class_name": "Magicien",
+    "subclass_name": "École d'abjuration",
+    "level": 2,
+    "name_fr": "Abjurateur érudit",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "L'or et le temps nécessaires pour copier un sort d'abjuration dans votre grimoire sont réduits de moitié."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_abjuration_protection_arcanique",
+    "class_name": "Magicien",
+    "subclass_name": "École d'abjuration",
+    "level": 2,
+    "name_fr": "Protection arcanique",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Quand vous lancez un sort d'abjuration de niveau 1 ou plus, vous créez un bouclier magique qui absorbe des dégâts (2 x niveau du sort + votre niveau de magicien) jusqu'à épuisement ou fin d'un repos long."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_abjuration_protection_projet_e",
+    "class_name": "Magicien",
+    "subclass_name": "École d'abjuration",
+    "level": 6,
+    "name_fr": "Protection projetée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez utiliser votre réaction pour transférer les dégâts absorbés par votre Protection arcanique sur une autre créature à 9 m que vous pouvez voir."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_abjuration_abjuration_am_lior_e",
+    "class_name": "Magicien",
+    "subclass_name": "École d'abjuration",
+    "level": 10,
+    "name_fr": "Abjuration améliorée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous créez votre Protection arcanique, vous pouvez choisir jusqu'à deux créatures supplémentaires à 9 m qui bénéficient chacune de leur propre réserve de points d'absorption."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_abjuration_r_sistance_aux_sorts",
+    "class_name": "Magicien",
+    "subclass_name": "École d'abjuration",
+    "level": 14,
+    "name_fr": "Résistance aux sorts",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous avez l'avantage aux jets de sauvegarde contre les sorts, et vous êtes résistant aux dégâts infligés par les sorts des autres créatures."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_divination_devin_rudit",
+    "class_name": "Magicien",
+    "subclass_name": "École de divination",
+    "level": 2,
+    "name_fr": "Devin érudit",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "L'or et le temps nécessaires pour copier un sort de divination dans votre grimoire sont réduits de moitié."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_divination_pr_sage",
+    "class_name": "Magicien",
+    "subclass_name": "École de divination",
+    "level": 2,
+    "name_fr": "Présage",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 2,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Après un repos court ou long, vous lancez deux d20 et notez les résultats ; vous pouvez ensuite les substituer à un jet d'attaque, de caractéristique ou de sauvegarde vous concernant ou concernant une créature proche."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_divination_divination_experte",
+    "class_name": "Magicien",
+    "subclass_name": "École de divination",
+    "level": 6,
+    "name_fr": "Divination experte",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous lancez un sort de divination utilisant un emplacement de niveau 2 ou plus, vous récupérez un emplacement de sort d'un niveau inférieur."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_divination_troisi_me_il",
+    "class_name": "Magicien",
+    "subclass_name": "École de divination",
+    "level": 10,
+    "name_fr": "Troisième œil",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action, vous gagnez l'un des sens suivants jusqu'à la fin de votre tour (sans dépense) : vision dans le noir, vue éthérée, détection des invisibles, ou lecture de toute langue."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_divination_pr_sage_sup_rieur",
+    "class_name": "Magicien",
+    "subclass_name": "École de divination",
+    "level": 14,
+    "name_fr": "Présage supérieur",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous obtenez trois d20 pour votre Présage (au lieu de deux) et pouvez en utiliser plus d'un pour un même jet."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_enchantement_enchanteur_rudit",
+    "class_name": "Magicien",
+    "subclass_name": "École d'enchantement",
+    "level": 2,
+    "name_fr": "Enchanteur érudit",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "L'or et le temps nécessaires pour copier un sort d'enchantement dans votre grimoire sont réduits de moitié."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_enchantement_regard_hypnotique",
+    "class_name": "Magicien",
+    "subclass_name": "École d'enchantement",
+    "level": 2,
+    "name_fr": "Regard hypnotique",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action, vous pouvez tenter d'hypnotiser une créature que vous voyez à 1,50 m (JdS de Sagesse) ; en cas d'échec, elle est incapable d'agir jusqu'à la fin de votre prochain tour."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_enchantement_charme_instinctif",
+    "class_name": "Magicien",
+    "subclass_name": "École d'enchantement",
+    "level": 6,
+    "name_fr": "Charme instinctif",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par tour, en réaction, vous pouvez rediriger une attaque contre vous vers une autre créature à 1,50 m (JdS de Sagesse pour l'attaquant, sinon la nouvelle cible est visée)."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_enchantement_partage_d_enchantement",
+    "class_name": "Magicien",
+    "subclass_name": "École d'enchantement",
+    "level": 10,
+    "name_fr": "Partage d'enchantement",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous lancez un sort d'enchantement de niveau 1 ou plus qui ne cible qu'une créature, vous pouvez viser une seconde créature à 9 m."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_enchantement_alt_ration_m_morielle",
+    "class_name": "Magicien",
+    "subclass_name": "École d'enchantement",
+    "level": 14,
+    "name_fr": "Altération mémorielle",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez lancer le sort modification de la mémoire sans dépenser d'emplacement de sort, une fois par repos long."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_illusion_illusionniste_rudit",
+    "class_name": "Magicien",
+    "subclass_name": "École d'illusion",
+    "level": 2,
+    "name_fr": "Illusionniste érudit",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "L'or et le temps nécessaires pour copier un sort d'illusion dans votre grimoire sont réduits de moitié."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_illusion_illusion_mineure_am_lior_e",
+    "class_name": "Magicien",
+    "subclass_name": "École d'illusion",
+    "level": 2,
+    "name_fr": "Illusion mineure améliorée",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre cantrip Illusion mineure gagne deux effets supplémentaires au choix chaque fois que vous le lancez."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_illusion_illusions_mall_ables",
+    "class_name": "Magicien",
+    "subclass_name": "École d'illusion",
+    "level": 6,
+    "name_fr": "Illusions malléables",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez modifier à distance l'illusion créée par un de vos sorts, changeant sa nature dans les limites du sort d'origine."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_illusion_double_illusoire",
+    "class_name": "Magicien",
+    "subclass_name": "École d'illusion",
+    "level": 10,
+    "name_fr": "Double illusoire",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_court"
+    },
+    "description_originale_proposee": "Par une action, vous créez une illusion parfaite de vous-même à 1,50 m qui dure jusqu'à ce qu'elle soit dissipée ; vous pouvez échanger vos places avec elle magiquement."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_illusion_r_alit_illusoire",
+    "class_name": "Magicien",
+    "subclass_name": "École d'illusion",
+    "level": 14,
+    "name_fr": "Réalité illusoire",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par sort d'illusion lancé, vous pouvez rendre un objet non magique inclus dans l'illusion réel pendant 1 minute."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_invocation_invocateur_rudit",
+    "class_name": "Magicien",
+    "subclass_name": "École d'invocation",
+    "level": 2,
+    "name_fr": "Invocateur érudit",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "L'or et le temps nécessaires pour copier un sort d'invocation dans votre grimoire sont réduits de moitié."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_invocation_invocation_mineure",
+    "class_name": "Magicien",
+    "subclass_name": "École d'invocation",
+    "level": 2,
+    "name_fr": "Invocation mineure",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action et une composante matérielle sans valeur, vous invoquez une créature spectrale minuscule qui vous obéit pendant 1 heure."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_invocation_permutation",
+    "class_name": "Magicien",
+    "subclass_name": "École d'invocation",
+    "level": 6,
+    "name_fr": "Permutation",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Quand vous lancez un sort d'invocation de niveau 1 ou plus, vous pouvez remplacer une de ses composantes matérielles non coûteuses par un geste ou une formule."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_invocation_invocation_consciencieuse",
+    "class_name": "Magicien",
+    "subclass_name": "École d'invocation",
+    "level": 10,
+    "name_fr": "Invocation consciencieuse",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous invoquez une créature par un sort, elle gagne des points de vie temporaires égaux à votre niveau de magicien."
+  },
+  {
+    "id_temp": "feat_magicien__cole_d_invocation_convocations_coriaces",
+    "class_name": "Magicien",
+    "subclass_name": "École d'invocation",
+    "level": 14,
+    "name_fr": "Convocations coriaces",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Les créatures que vous invoquez par un sort d'invocation sont résistantes à tous les dégâts pendant la durée du sort."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_n_cromancie_n_cromancien_rudit",
+    "class_name": "Magicien",
+    "subclass_name": "École de nécromancie",
+    "level": 2,
+    "name_fr": "Nécromancien érudit",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "L'or et le temps nécessaires pour copier un sort de nécromancie dans votre grimoire sont réduits de moitié."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_n_cromancie_sinistre_moisson",
+    "class_name": "Magicien",
+    "subclass_name": "École de nécromancie",
+    "level": 2,
+    "name_fr": "Sinistre moisson",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous tuez une créature avec un sort de niveau 1 ou plus, vous récupérez des points de vie temporaires égaux au double du niveau du sort (ou du niveau du cantrip x votre niveau de magicien/2)."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_n_cromancie_serviteurs_morts_vivants",
+    "class_name": "Magicien",
+    "subclass_name": "École de nécromancie",
+    "level": 6,
+    "name_fr": "Serviteurs morts-vivants",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous lancez un sort qui crée des morts-vivants sous votre contrôle, ils gagnent des points de vie et des dégâts supplémentaires liés à votre niveau de magicien."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_n_cromancie_insensibilit_la_non_vie",
+    "class_name": "Magicien",
+    "subclass_name": "École de nécromancie",
+    "level": 10,
+    "name_fr": "Insensibilité à la non-vie",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre maximum de points de vie augmente d'un montant égal à votre niveau de magicien, et vous gagnez la résistance aux dégâts nécrotiques."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_n_cromancie_contr_le_des_morts_vivants",
+    "class_name": "Magicien",
+    "subclass_name": "École de nécromancie",
+    "level": 14,
+    "name_fr": "Contrôle des morts-vivants",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action, vous pouvez tenter de prendre le contrôle d'un mort-vivant à 18 m (JdS de Sagesse pour lui) pour un nombre d'heures égal à votre niveau de magicien."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_transmutation_transmutateur_rudit",
+    "class_name": "Magicien",
+    "subclass_name": "École de transmutation",
+    "level": 2,
+    "name_fr": "Transmutateur érudit",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "L'or et le temps nécessaires pour copier un sort de transmutation dans votre grimoire sont réduits de moitié."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_transmutation_alchimie_mineure",
+    "class_name": "Magicien",
+    "subclass_name": "École de transmutation",
+    "level": 2,
+    "name_fr": "Alchimie mineure",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par 10 minutes de travail, vous transformez temporairement un matériau (bois, pierre, fer, cuivre, argent) en un autre pendant 1 heure."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_transmutation_pierre_du_transmutateur",
+    "class_name": "Magicien",
+    "subclass_name": "École de transmutation",
+    "level": 6,
+    "name_fr": "Pierre du transmutateur",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous créez une pierre du transmutateur qui donne à son porteur, au choix, la vision dans le noir, une vitesse accrue, une compétence supplémentaire, ou la résistance à un type de dégâts."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_transmutation_m_tamorphe",
+    "class_name": "Magicien",
+    "subclass_name": "École de transmutation",
+    "level": 10,
+    "name_fr": "Métamorphe",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_court"
+    },
+    "description_originale_proposee": "Vous pouvez utiliser une action pour vous transformer magiquement, changeant votre apparence physique sans altérer vos capacités."
+  },
+  {
+    "id_temp": "feat_magicien__cole_de_transmutation_ma_tre_transmutateur",
+    "class_name": "Magicien",
+    "subclass_name": "École de transmutation",
+    "level": 14,
+    "name_fr": "Maître transmutateur",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez utiliser votre Pierre du transmutateur pour lancer le sort transformation en pierre sans dépenser d'emplacement de sort, une fois entre deux repos longs."
+  },
+  {
+    "id_temp": "feat_moine_voie_de_l_ombre_arts_des_ombres",
+    "class_name": "Moine",
+    "subclass_name": "Voie de l'ombre",
+    "level": 3,
+    "name_fr": "Arts des ombres",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez dépenser 2 points de ki pour lancer, sans composante, l'un des sorts obscurité, silence, passe-partout ou détection de la magie."
+  },
+  {
+    "id_temp": "feat_moine_voie_de_l_ombre_foul_e_d_ombre",
+    "class_name": "Moine",
+    "subclass_name": "Voie de l'ombre",
+    "level": 6,
+    "name_fr": "Foulée d'ombre",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez vous téléporter jusqu'à 18 m d'une zone d'ombre à une autre en action bonus, à condition que les deux zones soient faiblement ou pas du tout éclairées."
+  },
+  {
+    "id_temp": "feat_moine_voie_de_l_ombre_linceul_d_ombre",
+    "class_name": "Moine",
+    "subclass_name": "Voie de l'ombre",
+    "level": 11,
+    "name_fr": "Linceul d'ombre",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Dans une zone de faible luminosité ou d'obscurité, vous pouvez dépenser 3 points de ki pour devenir invisible tant que vous restez dans cette zone."
+  },
+  {
+    "id_temp": "feat_moine_voie_de_l_ombre_opportuniste",
+    "class_name": "Moine",
+    "subclass_name": "Voie de l'ombre",
+    "level": 17,
+    "name_fr": "Opportuniste",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand une créature à 1,50 m de vous subit des dégâts d'une autre source que vous, vous pouvez utiliser votre réaction pour l'attaquer au corps à corps."
+  },
+  {
+    "id_temp": "feat_moine_voie_des_quatre_l_ments_disciple_des_l_ments",
+    "class_name": "Moine",
+    "subclass_name": "Voie des quatre éléments",
+    "level": 3,
+    "name_fr": "Disciple des éléments",
+    "choice_type": "discipline_elementaire",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez des disciplines élémentaires (sorts-like alimentés par des points de ki) que vous pouvez lancer au lieu de sorts classiques, en utilisant la Sagesse comme caractéristique d'incantation."
+  },
+  {
+    "id_temp": "feat_moine_voie_des_quatre_l_ments_disciplines_l_mentaires",
+    "class_name": "Moine",
+    "subclass_name": "Voie des quatre éléments",
+    "level": 17,
+    "name_fr": "Disciplines élémentaires",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez de nouvelles disciplines élémentaires en montant de niveau, débloquant des effets tels que souffle de dragon, vague déferlante ou tempête de feu, chacune coûtant des points de ki."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_liste_de_sorts_étendue__1",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 1,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue disponible au choix pour votre Magie de pacte, sorts de niveau 1 : Charme-personne, Sommeil."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_liste_de_sorts_étendue__2",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 3,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 2)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 2 : Calme des émotions, Toile d'araignée."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_liste_de_sorts_étendue__3",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 5,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 3 : Dissipation de la magie, Croissance végétale."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_liste_de_sorts_étendue__4",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 7,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 4)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 4 : Domination de bête, Œil arcanique."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_liste_de_sorts_étendue__5",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 9,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 5 : Domination de personne, Songe."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_pr_sence_f_erique",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 1,
+    "name_fr": "Présence féerique",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_court"
+    },
+    "description_originale_proposee": "Par une action, vous entourez d'une aura féerique une créature à 3 m que vous voyez (JdS de Sagesse), lui infligeant charme ou peur jusqu'à la fin de votre prochain tour."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e__chappatoire_brumeuse",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 6,
+    "name_fr": "Échappatoire brumeuse",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_court"
+    },
+    "description_originale_proposee": "Quand vous subissez des dégâts, vous pouvez utiliser votre réaction pour devenir invisible et vous téléporter jusqu'à 18 m vers un espace inoccupé visible."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_d_fenses_captivantes",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 10,
+    "name_fr": "Défenses captivantes",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand une créature vous touche par une attaque de mêlée, vous pouvez utiliser votre réaction pour la forcer à effectuer un jet de sauvegarde de Sagesse ou devenir charmée par vous pendant 1 minute."
+  },
+  {
+    "id_temp": "feat_occultiste_l_archif_e_sombre_d_lire",
+    "class_name": "Occultiste",
+    "subclass_name": "L'Archifée",
+    "level": 14,
+    "name_fr": "Sombre délire",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_court"
+    },
+    "description_originale_proposee": "Vous pouvez plonger une créature charmée ou effrayée par vous dans un délire hypnotique, l'incapacitant tant qu'elle reste à 18 m de vous."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_liste_de_sorts_étendue__1",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 1,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 1 : Détection de la magie, Reflets troublants."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_liste_de_sorts_étendue__2",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 3,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 2)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 2 : Détection des pensées, Toile d'araignée."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_liste_de_sorts_étendue__3",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 5,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 3 : Clairvoyance, Immobilisation de monstre."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_liste_de_sorts_étendue__4",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 7,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 4)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 4 : Confusion, Œil arcanique."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_liste_de_sorts_étendue__5",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 9,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 5 : Domination de personne, Télépathie."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_esprit_veill",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 1,
+    "name_fr": "Esprit éveillé",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la télépathie avec toute créature que vous voyez à 9 m, sans qu'un langage commun soit nécessaire."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_protection_entropique",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 6,
+    "name_fr": "Protection entropique",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_court"
+    },
+    "description_originale_proposee": "Quand une créature vous attaque, vous pouvez utiliser votre réaction pour lui imposer un désavantage à son jet, gagnant vous-même l'avantage à votre prochain jet de sauvegarde."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_bouclier_mental",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 10,
+    "name_fr": "Bouclier mental",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous êtes en permanence protégé contre la détection des pensées, et quand vous subissez des dégâts psychiques, vous pouvez utiliser votre réaction pour les réduire de moitié."
+  },
+  {
+    "id_temp": "feat_occultiste_le_grand_ancien_asservissement",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Grand Ancien",
+    "level": 14,
+    "name_fr": "Asservissement",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action, vous forcez une créature à vous obéir (JdS de Sagesse), ou en cas d'échec critique elle devient incapable d'agir tant qu'elle vous entend parler."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_liste_de_sorts_étendue__1",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 1,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 1)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue liée au type de génie choisi (Dao/Djinn/Éfrit/Maride), sorts de niveau 1 (ex. Bouclier ardent ou Nuage de brouillard selon le type)."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_liste_de_sorts_étendue__2",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 3,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 2)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 2 liés au type de génie."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_liste_de_sorts_étendue__3",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 5,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 3 liés au type de génie."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_liste_de_sorts_étendue__4",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 7,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 4)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 4 liés au type de génie."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_liste_de_sorts_étendue__5",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 9,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Liste de sorts étendue, sorts de niveau 5 liés au type de génie."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_liste_de_sorts_étendue__9",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 17,
+    "name_fr": "Liste de sorts étendue (Niveau de sort 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sort supplémentaire de niveau 9 (Arcanum mystique) lié au type de génie, obtenu au niveau 17."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_catalyseur_de_g_nie",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 1,
+    "name_fr": "Catalyseur de Génie",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Vous recevez une gourde magique liée à un plan élémentaire ; en buvant son contenu par une action bonus, vous gagnez un effet lié à votre type de génie (dégâts, soins ou repoussement selon le type)."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_pr_sent_l_mentaire",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 6,
+    "name_fr": "Présent élémentaire",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez un trait passif lié à votre type de génie (par exemple résistance élémentaire ou vitesse de vol/nage) tant que votre gourde a une charge."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_sanctuaire_du_g_nie",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 10,
+    "name_fr": "Sanctuaire du génie",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez, une fois par jour, créer un espace extraplanaire sûr accessible par votre gourde où vous et vos alliés pouvez vous reposer."
+  },
+  {
+    "id_temp": "feat_occultiste_le_g_nie_souhait_limit",
+    "class_name": "Occultiste",
+    "subclass_name": "Le Génie",
+    "level": 14,
+    "name_fr": "Souhait limité",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Une fois par période longue (30 jours), vous pouvez lancer le sort souhait limité sans dépenser d'emplacement de sort."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_pr_ceptes_des_anciens",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 3,
+    "name_fr": "Préceptes des anciens",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous vous engagez à préserver la lumière, la beauté, l'amour et la vie face aux forces qui répandraient les ténèbres et le désespoir."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_sorts_de_serment__3",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 3,
+    "name_fr": "Sorts de serment (Niveau de paladin 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Amitié avec les animaux, Ensorcellement."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_sorts_de_serment__5",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 5,
+    "name_fr": "Sorts de serment (Niveau de paladin 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Croissance végétale, Lueur d'espoir."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_sorts_de_serment__9",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 9,
+    "name_fr": "Sorts de serment (Niveau de paladin 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Dissipation de la magie, Reflets troublants."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_sorts_de_serment__13",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 13,
+    "name_fr": "Sorts de serment (Niveau de paladin 13)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Domination de bête, Liberté de mouvement."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_sorts_de_serment__17",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 17,
+    "name_fr": "Sorts de serment (Niveau de paladin 17)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Communion avec la nature, Mur de vent."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_conduit_divin",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 3,
+    "name_fr": "Conduit divin",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez deux options de Conduit divin propres à ce serment : Éclat de la nature (une créature à 9 m subit un désavantage à son prochain jet de sauvegarde) et Rempart de la nature (vous devenez difficile à toucher et gagnez la résistance aux dégâts)."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_aura_de_garde",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 7,
+    "name_fr": "Aura de garde",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous et vos alliés à 3 m (9 m au niveau 18) êtes résistants aux dégâts infligés par les sorts."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_sentinelle_immortelle",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 15,
+    "name_fr": "Sentinelle immortelle",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Quand vous tombez à 0 point de vie sans être tué net, vous pouvez choisir de revenir à la place avec la moitié de vos points de vie maximum, une fois par repos long."
+  },
+  {
+    "id_temp": "feat_paladin_serment_des_anciens_champion_antique",
+    "class_name": "Paladin",
+    "subclass_name": "Serment des anciens",
+    "level": 20,
+    "name_fr": "Champion antique",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Vous appelez la nature à votre aide : vos armes infligent des dégâts supplémentaires et vous gagnez une vitesse de vol temporaire pendant 1 minute, une fois par repos long."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_pr_ceptes_de_vengeance",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 3,
+    "name_fr": "Préceptes de vengeance",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous vous engagez à traquer et punir sans relâche ceux qui commettent de grands maux, quel qu'en soit le prix personnel."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_sorts_de_serment__3",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 3,
+    "name_fr": "Sorts de serment (Niveau de paladin 3)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Marque du chasseur, Punition sanglante."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_sorts_de_serment__5",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 5,
+    "name_fr": "Sorts de serment (Niveau de paladin 5)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Immobilisation de personne, Repli sinistre."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_sorts_de_serment__9",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 9,
+    "name_fr": "Sorts de serment (Niveau de paladin 9)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Anti-détection, Repérage."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_sorts_de_serment__13",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 13,
+    "name_fr": "Sorts de serment (Niveau de paladin 13)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Bannissement, Œil arcanique."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_sorts_de_serment__17",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 17,
+    "name_fr": "Sorts de serment (Niveau de paladin 17)",
+    "choice_type": "sort_domaine",
+    "uses_per_rest": null,
+    "description_originale_proposee": "Sorts de serment toujours préparés : Domination de personne, Scrutation."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_conduit_divin",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 3,
+    "name_fr": "Conduit divin",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez deux options de Conduit divin propres à ce serment : Menace abjuratoire (une créature à 9 m a un désavantage à ses attaques contre des cibles autres que vous) et Vœu d'inimitié (avantage à vos jets d'attaque contre une créature choisie pendant 1 minute)."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_vengeur_implacable",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 7,
+    "name_fr": "Vengeur implacable",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand une créature que vous avez touchée à votre dernier tour se déplace sans votre permission, vous pouvez utiliser votre réaction pour vous déplacer avec elle jusqu'à sa vitesse, sans provoquer d'attaque d'opportunité."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance__me_vengeresse",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 15,
+    "name_fr": "Âme vengeresse",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre vitesse augmente de 3 m tant que vous n'êtes pas incapable d'agir, et les créatures que vous prenez en chasse ne peuvent pas bénéficier de la Discrétion contre vous."
+  },
+  {
+    "id_temp": "feat_paladin_serment_de_vengeance_ange_de_la_vengeance",
+    "class_name": "Paladin",
+    "subclass_name": "Serment de vengeance",
+    "level": 20,
+    "name_fr": "Ange de la vengeance",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Par une action, vous vous transformez, faisant pousser des ailes spectrales vous octroyant une vitesse de vol de 18 m et imposant la peur à vos ennemis à 9 m (JdS de Sagesse), une fois par repos long."
+  },
+  {
+    "id_temp": "feat_rodeur_ma_tre_des_b_tes_compagnon_du_r_deur",
+    "class_name": "Rôdeur",
+    "subclass_name": "Maître des bêtes",
+    "level": 3,
+    "name_fr": "Compagnon du rôdeur",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez un compagnon animal (bête de FP 1/4 maximum) qui combat à vos côtés et agit à votre initiative."
+  },
+  {
+    "id_temp": "feat_rodeur_ma_tre_des_b_tes_entra_nement_exceptionnel",
+    "class_name": "Rôdeur",
+    "subclass_name": "Maître des bêtes",
+    "level": 7,
+    "name_fr": "Entraînement exceptionnel",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre compagnon animal peut, sans utiliser votre action, se déplacer et effectuer une action (Attaquer, Aider, Esquiver, Se cacher) de son propre chef."
+  },
+  {
+    "id_temp": "feat_rodeur_ma_tre_des_b_tes_fureur_bestiale",
+    "class_name": "Rôdeur",
+    "subclass_name": "Maître des bêtes",
+    "level": 11,
+    "name_fr": "Fureur bestiale",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez ordonner à votre compagnon d'attaquer deux fois lorsque vous utilisez votre action pour l'ordre Attaquer."
+  },
+  {
+    "id_temp": "feat_rodeur_ma_tre_des_b_tes_partage_des_sorts",
+    "class_name": "Rôdeur",
+    "subclass_name": "Maître des bêtes",
+    "level": 15,
+    "name_fr": "Partage des sorts",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous lancez un sort sur vous-même, vous pouvez aussi affecter votre compagnon animal s'il est à 9 m ou moins."
+  },
+  {
+    "id_temp": "feat_rodeur_gardien_de_drake_don_draconique",
+    "class_name": "Rôdeur",
+    "subclass_name": "Gardien de drake",
+    "level": 3,
+    "name_fr": "Don draconique",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez un don lié aux dragons (par exemple Interprète draconique ou Résilience draconique) qui renforce votre lien avec votre futur compagnon drake."
+  },
+  {
+    "id_temp": "feat_rodeur_gardien_de_drake_compagnon_drake",
+    "class_name": "Rôdeur",
+    "subclass_name": "Gardien de drake",
+    "level": 3,
+    "name_fr": "Compagnon drake",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Un œuf de dragon magique éclot à votre contact, vous liant à un drake compagnon qui grandit et combat à vos côtés, agissant à votre initiative."
+  },
+  {
+    "id_temp": "feat_rodeur_gardien_de_drake_lien_du_croc_et_d_cailles",
+    "class_name": "Rôdeur",
+    "subclass_name": "Gardien de drake",
+    "level": 7,
+    "name_fr": "Lien du croc et d'écailles",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous et votre drake bénéficiez d'un bonus mutuel aux jets d'attaque ou de dégâts lorsque vous combattez à proximité l'un de l'autre."
+  },
+  {
+    "id_temp": "feat_rodeur_gardien_de_drake_souffle_de_drake",
+    "class_name": "Rôdeur",
+    "subclass_name": "Gardien de drake",
+    "level": 11,
+    "name_fr": "Souffle de drake",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Votre drake peut utiliser une action pour exhaler un souffle d'énergie élémentaire (type déterminé par son ascendance), infligeant des dégâts dans une zone avec jet de sauvegarde."
+  },
+  {
+    "id_temp": "feat_rodeur_gardien_de_drake_lien_parfait",
+    "class_name": "Rôdeur",
+    "subclass_name": "Gardien de drake",
+    "level": 15,
+    "name_fr": "Lien parfait",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Votre drake atteint sa taille adulte, gagnant des points de vie, une attaque et un souffle plus puissants, ainsi qu'une plus grande autonomie au combat."
+  },
+  {
+    "id_temp": "feat_roublard_assassin_ma_trises_suppl_mentaires",
+    "class_name": "Roublard",
+    "subclass_name": "Assassin",
+    "level": 3,
+    "name_fr": "Maîtrises supplémentaires",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous gagnez la maîtrise des outils de déguisement et des outils d'empoisonneur."
+  },
+  {
+    "id_temp": "feat_roublard_assassin_assassinat",
+    "class_name": "Roublard",
+    "subclass_name": "Assassin",
+    "level": 3,
+    "name_fr": "Assassinat",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous avez l'avantage aux jets d'attaque contre toute créature qui n'a pas encore agi lors du combat, et toute attaque réussie contre une créature surprise est un coup critique."
+  },
+  {
+    "id_temp": "feat_roublard_assassin_expert_en_infiltration",
+    "class_name": "Roublard",
+    "subclass_name": "Assassin",
+    "level": 9,
+    "name_fr": "Expert en infiltration",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez passer 1 heure à adopter une nouvelle identité (apparence, voix, manières) crédible sans magie."
+  },
+  {
+    "id_temp": "feat_roublard_assassin_imposteur",
+    "class_name": "Roublard",
+    "subclass_name": "Assassin",
+    "level": 13,
+    "name_fr": "Imposteur",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez imiter parfaitement l'écriture, la voix et le comportement d'une autre personne après une observation suffisante."
+  },
+  {
+    "id_temp": "feat_roublard_assassin_frappe_meurtri_re",
+    "class_name": "Roublard",
+    "subclass_name": "Assassin",
+    "level": 17,
+    "name_fr": "Frappe meurtrière",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous touchez une créature surprise, elle doit réussir un jet de sauvegarde de Constitution (DD égal à votre attaque sournoise + votre modificateur de Dextérité) ou subir le double des dégâts de l'attaque."
+  },
+  {
+    "id_temp": "feat_roublard_escroc_arcanique_incantation",
+    "class_name": "Roublard",
+    "subclass_name": "Escroc arcanique",
+    "level": 3,
+    "name_fr": "Incantation",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez à lancer des sorts de magicien (surtout école d'illusion et d'enchantement), en utilisant l'Intelligence comme caractéristique d'incantation, avec une progression lente (un tiers de votre niveau de roublard)."
+  },
+  {
+    "id_temp": "feat_roublard_escroc_arcanique_escamotage_et_main_de_mage",
+    "class_name": "Roublard",
+    "subclass_name": "Escroc arcanique",
+    "level": 3,
+    "name_fr": "Escamotage et main de mage",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous apprenez le cantrip main de mage, et pouvez le rendre invisible et l'utiliser pour voler ou manipuler des objets à distance en action bonus, en lien avec votre Ruse."
+  },
+  {
+    "id_temp": "feat_roublard_escroc_arcanique_embuscade_magique",
+    "class_name": "Roublard",
+    "subclass_name": "Escroc arcanique",
+    "level": 9,
+    "name_fr": "Embuscade magique",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand vous êtes invisible au moment de lancer un sort sur une créature, celle-ci a un désavantage à son jet de sauvegarde contre ce sort."
+  },
+  {
+    "id_temp": "feat_roublard_escroc_arcanique_escroc_polyvalent",
+    "class_name": "Roublard",
+    "subclass_name": "Escroc arcanique",
+    "level": 13,
+    "name_fr": "Escroc polyvalent",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez remplacer l'effet de votre main de mage invisible par un tour de passe-passe de votre choix, comme distraire une créature à distance."
+  },
+  {
+    "id_temp": "feat_roublard_escroc_arcanique_voleur_de_sort",
+    "class_name": "Roublard",
+    "subclass_name": "Escroc arcanique",
+    "level": 17,
+    "name_fr": "Voleur de sort",
+    "choice_type": null,
+    "uses_per_rest": {
+      "amount": 1,
+      "rest_type": "repos_long"
+    },
+    "description_originale_proposee": "Après avoir mis hors de combat une créature capable de lancer des sorts, vous pouvez lui dérober un sort qu'elle avait préparé et le lancer vous-même une fois avant la fin de votre prochain repos long."
+  },
+  {
+    "id_temp": "feat_roublard_conspirateur_ma_tre_des_intrigues",
+    "class_name": "Roublard",
+    "subclass_name": "Conspirateur",
+    "level": 3,
+    "name_fr": "Maître des intrigues",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez imiter l'accent et le dialecte d'une autre personne après l'avoir écoutée pendant 1 minute, et vous gagnez deux outils de jeu ou langues supplémentaires."
+  },
+  {
+    "id_temp": "feat_roublard_conspirateur_ma_tre_des_tactiques",
+    "class_name": "Roublard",
+    "subclass_name": "Conspirateur",
+    "level": 3,
+    "name_fr": "Maître des tactiques",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Par une action bonus, vous aidez à distance : une créature alliée qui peut vous entendre gagne l'avantage à son prochain jet d'attaque ou de compétence avant la fin de votre prochain tour."
+  },
+  {
+    "id_temp": "feat_roublard_conspirateur_manipulateur_perspicace",
+    "class_name": "Roublard",
+    "subclass_name": "Conspirateur",
+    "level": 9,
+    "name_fr": "Manipulateur perspicace",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Après avoir parlé avec une créature pendant au moins 1 minute, vous pouvez apprendre si elle a l'intention de mentir, ses attitudes et centres d'intérêt émotionnels."
+  },
+  {
+    "id_temp": "feat_roublard_conspirateur_redirection",
+    "class_name": "Roublard",
+    "subclass_name": "Conspirateur",
+    "level": 13,
+    "name_fr": "Redirection",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Quand une créature vous touche par une attaque de mêlée, vous pouvez utiliser votre réaction pour désigner une autre créature à 1,50 m qui devient la cible de l'attaque à votre place."
+  },
+  {
+    "id_temp": "feat_roublard_conspirateur__me_de_trompeur",
+    "class_name": "Roublard",
+    "subclass_name": "Conspirateur",
+    "level": 17,
+    "name_fr": "Âme de trompeur",
+    "choice_type": null,
+    "uses_per_rest": null,
+    "description_originale_proposee": "Vous pouvez utiliser votre action bonus d'Aide à distance sur deux créatures alliées à la fois, et Manipulateur perspicace vous permet aussi d'implanter une fausse impression durable."
+  }
+]
