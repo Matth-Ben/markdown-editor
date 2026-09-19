@@ -9,7 +9,7 @@
 
 begin;
 
-select plan(28);
+select plan(31);
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
@@ -255,6 +255,36 @@ select is(
   1,
   'L''auteur ne peut plus supprimer une proposition déjà décidée'
 );
+
+-- ------------------------------------- propositions de modification (target_id)
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'aaaaaaaa-0000-0000-0000-00000000000a', 'role', 'authenticated')::text, true);
+
+select lives_ok(
+  $$ insert into public.content_proposals (id, author_id, content_type, title, payload, target_id)
+     values ('11111111-0000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-00000000000a', 'spell', 'Acide fusant (révisé)', '{"description": "x"}', 1) $$,
+  'Un membre peut proposer la modification d''un élément existant (target_id)'
+);
+
+select throws_ok(
+  $$ insert into public.content_proposals (author_id, content_type, title, payload, target_id)
+     values ('aaaaaaaa-0000-0000-0000-00000000000a', 'spell', 'Cible invalide', '{}', 0) $$,
+  '23514', null,
+  'Une cible invalide (0) est refusée'
+);
+
+reset role;
+
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'cccccccc-0000-0000-0000-00000000000c', 'role', 'authenticated')::text, true);
+
+select throws_ok(
+  $$ update public.content_proposals set target_id = 5 where id = '11111111-0000-0000-0000-000000000003' $$,
+  '42501', null,
+  'La cible n''est jamais modifiable après coup, même par l''admin (privilège de colonne)'
+);
+
+reset role;
 
 select * from finish();
 
