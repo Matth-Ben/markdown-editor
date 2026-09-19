@@ -9,7 +9,7 @@
 
 begin;
 
-select plan(25);
+select plan(28);
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
@@ -60,6 +60,28 @@ select throws_ok(
   'Le type de contenu est limité à spell/feat/item'
 );
 
+select lives_ok(
+  $$ insert into public.content_proposals (author_id, content_type, title, payload)
+     values ('aaaaaaaa-0000-0000-0000-00000000000a', 'race', 'Race de test', '{"size": "Moyenne"}'),
+            ('aaaaaaaa-0000-0000-0000-00000000000a', 'class', 'Classe de test', '{"hit_die": 8}') $$,
+  'Les types race et class sont acceptés'
+);
+
+select lives_ok(
+  $$ insert into public.content_proposals (author_id, content_type, title, payload)
+     values ('aaaaaaaa-0000-0000-0000-00000000000a', 'class', 'Classe volumineuse',
+             jsonb_build_object('blob', repeat('x', 40000))) $$,
+  'Un contenu volumineux (40 000 octets) est accepté jusqu''à la nouvelle borne'
+);
+
+select throws_ok(
+  $$ insert into public.content_proposals (author_id, content_type, title, payload)
+     values ('aaaaaaaa-0000-0000-0000-00000000000a', 'class', 'Trop gros',
+             jsonb_build_object('blob', repeat('x', 70000))) $$,
+  '23514', null,
+  'Un contenu de plus de 60 000 octets reste refusé'
+);
+
 select throws_ok(
   $$ update public.content_proposals set title = 'Modifié' where id = '11111111-0000-0000-0000-000000000001' $$,
   '42501', null,
@@ -81,7 +103,7 @@ select set_config('request.jwt.claims', json_build_object('role', 'anon')::text,
 
 select is(
   (select count(*)::int from public.content_proposals),
-  1,
+  4,
   'Un visiteur non connecté peut lire les propositions'
 );
 
