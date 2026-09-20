@@ -22,6 +22,20 @@ function translateAuthError(message: string): string {
   if (message.includes("rate limit")) {
     return "Trop de tentatives, réessaie dans quelques minutes.";
   }
+  if (message.includes("Error sending confirmation email")) {
+    return "Impossible d'envoyer l'email de confirmation. Réessaie plus tard.";
+  }
+  if (message.includes("Signups not allowed")) {
+    return "Les inscriptions sont désactivées pour le moment.";
+  }
+  if (message.includes("valid email") || message.includes("invalid format")) {
+    return "L'adresse email n'est pas valide.";
+  }
+  if (message.includes("Database error")) {
+    return "Erreur serveur lors de la création du compte. Réessaie plus tard.";
+  }
+  // Message non reconnu : on le trace côté serveur pour pouvoir diagnostiquer.
+  console.error("[auth] Erreur Supabase non traduite :", message);
   return "Une erreur est survenue, réessaie.";
 }
 
@@ -66,6 +80,7 @@ export async function signUp(
   const { error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
+    console.error("[auth] signUp a échoué :", error.name, error.status, error.code, error.message);
     return { error: translateAuthError(error.message) };
   }
 
