@@ -208,7 +208,9 @@ const sections: Section[] = [
           </li>
           <li>
             <strong>Supprimer ton compte et toutes tes données</strong> :{" "}
-            <em>Profil › Confidentialité et données › Supprimer mon compte</em>.
+            <em>Profil › Confidentialité et données › Supprimer mon compte</em>,
+            ou sans l’application en suivant{" "}
+            <a href="/suppression-compte">cette procédure</a>.
           </li>
           <li>
             <strong>Désactiver les statistiques d’utilisation</strong> :{" "}

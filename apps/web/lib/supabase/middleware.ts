@@ -2,13 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const REDIRECT_IF_AUTHENTICATED = ["/login", "/register", "/reset-password"];
-// "/confidentialite" : politique de confidentialité, exigée publique (sans
-// connexion) par Google Play.
+// "/confidentialite" et "/suppression-compte" : politique de confidentialité
+// et demande de suppression de compte, exigées publiques (sans connexion)
+// par Google Play.
 const PUBLIC_PATHS = [
   ...REDIRECT_IF_AUTHENTICATED,
   "/update-password",
   "/auth/confirm",
   "/confidentialite",
+  "/suppression-compte",
 ];
 
 export async function updateSession(request: NextRequest) {
