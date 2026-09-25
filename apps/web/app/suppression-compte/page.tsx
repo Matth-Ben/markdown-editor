@@ -68,7 +68,41 @@ export default function AccountDeletionPage() {
           </li>
         </ol>
 
-        <h2 id="donnees-supprimees">Données supprimées</h2>
+        <h2 id="suppression-partielle">
+          Supprimer une partie de tes données (sans supprimer ton compte)
+        </h2>
+        <p>Directement depuis l’application, à tout moment :</p>
+        <ul>
+          <li>
+            <strong>un personnage</strong> et tout son contenu : menu ⋮ de la
+            fiche › Supprimer le personnage ;
+          </li>
+          <li>
+            <strong>une photo</strong> : portrait ou photo de galerie depuis la
+            fiche, avatar depuis ton profil ;
+          </li>
+          <li>
+            <strong>une entrée de journal</strong> depuis l’onglet Histoire de
+            la fiche ;
+          </li>
+          <li>
+            <strong>ta participation</strong> à une histoire ou à un groupe :
+            Quitter l’histoire / Quitter le groupe ;
+          </li>
+          <li>
+            <strong>tes statistiques d’utilisation</strong> : désactive leur
+            envoi dans Profil › Confidentialité et données.
+          </li>
+        </ul>
+        <p>
+          Pour toute autre donnée (par exemple tes statistiques déjà collectées
+          ou un ticket de bug publié), écris à{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> depuis
+          l’adresse de ton compte en précisant ce que tu veux supprimer : nous
+          traitons la demande sous 30 jours.
+        </p>
+
+        <h2 id="donnees-supprimees">Données supprimées avec le compte</h2>
         <ul>
           <li>ton compte (adresse e-mail, mot de passe, pseudo) ;</li>
           <li>
