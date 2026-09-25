@@ -27,7 +27,7 @@
 //   500 { error: "server_misconfigured" }               (env Supabase manquantes)
 //
 // Étapes :
-//   1. Authentifie l'appelant via le JWT -> auth.uid()/email.
+//   1. Authentifie l'appelant via le JWT -> auth.uid().
 //   2. Valide le corps (title/description/severity non vides, severity dans
 //      l'enum, characterId bien un uuid si fourni -- pas de vérification
 //      d'appartenance : c'est un contexte informatif, pas une donnée
@@ -192,9 +192,6 @@ Deno.serve(async (req: Request) => {
     severity,
     appVersion,
     platform,
-    characterId,
-    reporterEmail: user.email,
-    reporterId: user.id,
   });
 
   if (syncResult.ok) {
@@ -242,9 +239,6 @@ interface SyncInput {
   severity: Severity;
   appVersion: string | null;
   platform: string | null;
-  characterId: string | null;
-  reporterEmail: string | null;
-  reporterId: string;
 }
 
 type SyncResult =
@@ -321,11 +315,11 @@ function buildIssueBody(bugReportId: string, input: SyncInput): string {
     `**Sévérité :** ${input.severity}`,
     `**Version de l'app :** ${input.appVersion ?? "non renseignée"}`,
     `**Plateforme :** ${input.platform ?? "non renseignée"}`,
-    `**Signalé par :** ${input.reporterEmail ?? "email inconnu"} (reporter_id: ${input.reporterId})`,
   ];
-  if (input.characterId) {
-    lines.push(`**Personnage concerné (character_id) :** ${input.characterId}`);
-  }
+  // Aucune donnée identifiante (e-mail, reporter_id, character_id) : le dépôt
+  // cible est PUBLIC. Ces informations restent dans bug_reports, retrouvable
+  // via l'identifiant ci-dessous (voir la politique de confidentialité,
+  // apps/web/app/confidentialite).
   lines.push(`**Signalement (bug_reports.id) :** ${bugReportId}`);
   return lines.join("\n");
 }
