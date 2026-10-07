@@ -207,8 +207,8 @@ reset role;
 -- sur `characters` sous le rôle anon, qui levait `permission denied for
 -- table characters`). Le nombre attendu est aussi corrigé de 3 à 4 : « Sens
 -- du danger » (class_feature id 149, Barbare niveau 2) a été ajouté par
--- 20260930120000_seed_subclass_features_part1.sql, après l'écriture de ce
--- test (20260908100000) -- vérifié que c'est une vraie aptitude de niveau 2
+-- 20260910100000_seed_class_features_srd_progression.sql (ligne 29), après
+-- l'écriture de ce test (20260908100000) -- vérifié que c'est une vraie aptitude de niveau 2
 -- du Manuel des Joueurs (Rage + Défense sans armure au niveau 1, Attaque
 -- impétueuse + Sens du danger au niveau 2), pas une fuite d'une aptitude de
 -- niveau supérieur : la base de données a simplement été complétée depuis,
