@@ -14,7 +14,7 @@
 
 begin;
 
-select plan(6);
+select plan(7);
 
 -- Fixtures : deux utilisateurs authentifiés (A rapporte un bug, B est un
 -- tiers sans relation avec le signalement de A).
@@ -58,13 +58,25 @@ select throws_ok(
 );
 
 -- Test 4 : A ne peut pas modifier son propre signalement (aucune policy
--- update -- RLS activée + aucune policy = deny-all, seule l'edge function
--- via service_role peut faire évoluer status/github_issue_*/error_message).
-select throws_ok(
+-- update -- RLS activée + aucune policy = deny-all). `authenticated` a pourtant
+-- un GRANT table-level update (20260903100000, ligne 88) : Postgres ne lève donc
+-- pas 42501 (le rôle a le privilège d'exécuter la commande), mais la RLS sans
+-- policy update retombe sur `using (false)`, donc la ligne ciblée n'est jamais
+-- "visible" pour la mise à jour -- 0 ligne affectée, silencieusement, sans
+-- exception. Vérifié manuellement hors suite : `UPDATE 0`, `status` reste
+-- `pending`. Seule l'edge function via service_role peut faire évoluer
+-- status/github_issue_*/error_message. Corrigé le 08/10/2026 (D60) : cette
+-- assertion attendait à tort un `42501` ; elle vérifie maintenant l'absence
+-- réelle d'effet plutôt qu'une exception qui ne se produit jamais dans ce cas.
+select lives_ok(
   $$ update public.bug_reports set status = 'synced' where id = 'cccccccc-0000-0000-0000-000000000001' $$,
-  '42501',
-  null,
-  'Aucun client authenticated ne doit pouvoir modifier un bug_reports, même le sien (aucune policy update, seule service_role le peut)'
+  'La commande UPDATE ne lève pas d''exception (le rôle authenticated a le privilège table-level), mais ne doit affecter aucune ligne'
+);
+
+select is(
+  (select status from public.bug_reports where id = 'cccccccc-0000-0000-0000-000000000001'),
+  'pending',
+  'Le statut du signalement ne doit pas avoir changé : la RLS sans policy update bloque silencieusement la mise à jour (0 ligne affectée)'
 );
 
 reset role;

@@ -208,6 +208,13 @@ begin
       v_inserted := v_inserted + 1;
     end if;
   end loop;
+  -- Les 56 noms ci-dessus sont tous distincts entre eux et distincts des 15 déjà en
+  -- base (vérifié un à un) : toute insertion manquante signale donc une vraie collision
+  -- de nom avec un historique existant (dédoublonnage trop prudent) plutôt qu'un
+  -- comportement attendu. Garde contre une régression silencieuse du type D59.
+  if v_inserted <> 56 then
+    raise exception 'Contrôle lot 7 : % historique(s) inséré(s), 56 attendus — au moins un nom a été confondu avec un historique déjà présent (dédoublonnage par égalité de nom insensible à la casse)', v_inserted;
+  end if;
   raise notice 'historiques insérés : %', v_inserted;
 end $$;
 
@@ -232,14 +239,27 @@ select 'background', '16', v.field_name, v.locale, v.value
                     where t.entity_type = 'background' and t.entity_id = '16'
                       and t.field_name = v.field_name and t.locale = v.locale);
 
--- Contrôle final
+-- Contrôle final.
+--
+-- Dette technique D59 (voir docs/dette-technique.md, dépôt mobile) : ce contrôle
+-- attendait auparavant un minimum absolu de 72 (15 historiques du socle + 57
+-- "attendus"), jamais atteint en local (71 au mieux) et pris à l'origine pour un
+-- dédoublonnage défaillant. Investigation : il n'y a ni collision de nom, ni
+-- dédoublonnage défaillant — le bloc ci-dessus insère bien ses 56 historiques (contrôle
+-- strict ajouté plus haut), et 15 + 56 = 71. Le 72 attendu supposait le placeholder
+-- « Grand voyageur » (id 16) déjà présent et marqué `is_incomplete`, pour que l'UPDATE
+-- ci-dessus le complète — un état qui n'existe que sur le projet Supabase distant (ligne
+-- créée hors migration, comme les placeholders analogues de races/sorts, cf. D58), jamais
+-- recréé par un `db reset` local. Le plancher est donc abaissé à 71 (garanti par cette
+-- migration seule, indépendamment de ce placeholder) ; un total de 72 reste attendu sur
+-- le projet distant où le placeholder existe déjà.
 do $$
 declare
   v_n int;
 begin
   select count(*) into v_n from public.backgrounds where not is_incomplete;
-  if v_n < 72 then
-    raise exception 'Contrôle lot 7 : % historiques complets, 72 attendus au minimum', v_n;
+  if v_n < 71 then
+    raise exception 'Contrôle lot 7 : % historiques complets, 71 attendus au minimum', v_n;
   end if;
   if exists (select 1 from public.backgrounds where is_incomplete) then
     raise exception 'Contrôle lot 7 : un historique reste marqué incomplet';
