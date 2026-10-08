@@ -103,6 +103,15 @@
 
 create or replace function public.apply_rest(
   p_character_id uuid,
+  -- ATTENTION convention de wire : [p_rest_type] accepte STRICTEMENT
+  -- 'court' / 'long' -- jamais 'repos_court' / 'repos_long'. C'est une
+  -- convention NOUVELLE, distincte de celle deja en base
+  -- `uses_per_rest ->> 'rest_type'` ('repos_court' / 'repos_long', voir
+  -- plus bas dans cette meme fonction). A ce jour le client Flutter
+  -- n'envoie rien ici (branchement pas encore fait, voir plus bas) : lors
+  -- de ce futur chantier, mapper explicitement `RestType.short` -> 'court'
+  -- et `RestType.long` -> 'long' -- ne jamais serialiser l'enum Dart brut
+  -- ni reutiliser la convention 'repos_court'/'repos_long'.
   p_rest_type text,
   p_primary_class_name text default '',
   p_dice_spent int default 0,
@@ -416,4 +425,4 @@ grant execute on function public.apply_rest(uuid, text, text, int, int)
   to authenticated;
 
 comment on function public.apply_rest(uuid, text, text, int, int) is
-  'Applique un repos (court ou long) en une seule transaction -- D05 du registre de dette technique mobile (ecritures multi-etapes non atomiques), suite de create_character (20261007110000). SECURITY DEFINER, verifie owner_id = auth.uid() sur p_character_id en tout premier (jamais un parametre owner_id). EXECUTE restreint a authenticated (revoke explicite anon/authenticated/public puis grant authenticated, meme precaution que 20261007110000/20261007090000). Porte la table de progression des emplacements de sorts (SpellSlotProgression, dépôt mobile) en CTE locales -- seule regle de jeu portee par cette migration, voir son commentaire de tete pour le detail et pour la raison du report d''apply_level_up a une PR separee. PIEGE CONNU NON RESOLU : non idempotente, un retry client apres succes serveur perdu rejoue la recuperation des des de vie au repos long (deja documente dans le registre de dette mobile) -- correction hors perimetre (mecanisme d''idempotence a concevoir separement). Pas encore appele par le client Flutter : branchement hors perimetre de la migration qui introduit cette fonction.';
+  'Applique un repos (court ou long) en une seule transaction -- D05 du registre de dette technique mobile (ecritures multi-etapes non atomiques), suite de create_character (20261007110000). SECURITY DEFINER, verifie owner_id = auth.uid() sur p_character_id en tout premier (jamais un parametre owner_id). EXECUTE restreint a authenticated (revoke explicite anon/authenticated/public puis grant authenticated, meme precaution que 20261007110000/20261007090000). Porte la table de progression des emplacements de sorts (SpellSlotProgression, dépôt mobile) en CTE locales -- seule regle de jeu portee par cette migration, voir son commentaire de tete pour le detail et pour la raison du report d''apply_level_up a une PR separee. PIEGE CONNU NON RESOLU : non idempotente, un retry client apres succes serveur perdu rejoue la recuperation des des de vie au repos long (deja documente dans le registre de dette mobile) -- correction hors perimetre (mecanisme d''idempotence a concevoir separement). Pas encore appele par le client Flutter : branchement hors perimetre de la migration qui introduit cette fonction. p_rest_type attend STRICTEMENT la valeur texte ''court'' ou ''long'' (jamais ''repos_court''/''repos_long'', qui est la convention distincte de uses_per_rest ->> ''rest_type'' utilisee plus loin dans cette fonction) -- a mapper explicitement depuis RestType.short/RestType.long cote Flutter lors du futur branchement.';
