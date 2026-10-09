@@ -504,7 +504,7 @@ begin
               where character_id = p_character_id and ability_id = (p_choice ->> 'feat_ability');
 
               if v_current_score is not null then
-                v_new_score := least(v_current_score + v_feat_amount, v_feat_max);
+                v_new_score := greatest(v_current_score, least(v_current_score + v_feat_amount, v_feat_max));
                 if v_new_score <> v_current_score then
                   update public.character_ability_scores
                      set score = v_new_score
