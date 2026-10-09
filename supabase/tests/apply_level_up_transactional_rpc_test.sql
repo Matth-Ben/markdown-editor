@@ -40,6 +40,24 @@
 --          écrits dans le même appel -- rien ne doit persister.
 --   49-50. Entrée malformée : `p_choice->>'kind'` inconnu lève une erreur
 --          explicite (P0001), sans aucune écriture.
+--   51-56. Interaction avec D10 (character_spells_unique_per_nature.sql,
+--          deux index uniques partiels par nature de ligne, PR separee pas
+--          encore mergee au moment ou ce bloc est ecrit) : multiclassage
+--          vers une classe dont `p_initial_spell_ids` inclut un sort DEJA
+--          connu via une AUTRE classe -- doit reussir sans erreur, le sort
+--          deja connu est ignore (pas reinsere, pas ecrase), et un sort
+--          reellement nouveau du meme tableau est bien insere. Ce bloc ne
+--          pose PAS les index de D10 lui-meme (pas du perimetre de cette
+--          migration) ; il verifie le COMPORTEMENT cote fonction (le garde
+--          `not exists` ajoute sur l'insertion des sorts initiaux, meme
+--          patron que celui deja en place pour les sorts innes raciaux),
+--          qui tient aussi bien avec que sans les index de D10 -- mais
+--          seul le premier cas (index presents) aurait leve une erreur
+--          23505 non interceptee avant ce correctif. Valide manuellement en
+--          sus, en fusionnant localement D10 dans ce worktree sans
+--          committer (voir le rapport de la tache qui a ajoute ce bloc),
+--          qu'aucune erreur 23505 n'est levee une fois les deux index de
+--          D10 reellement en place.
 --
 -- Lancer : supabase test db supabase/tests --local (stack locale Docker
 -- démarrée au préalable via `supabase start`, base réinitialisée via
@@ -48,7 +66,7 @@
 
 begin;
 
-select plan(50);
+select plan(56);
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
@@ -96,6 +114,7 @@ select
   (select id from public.spells order by id limit 1 offset 0) as spell_a_id,
   (select id from public.spells order by id limit 1 offset 1) as spell_b_id,
   (select id from public.spells order by id limit 1 offset 2) as spell_c_id,
+  (select id from public.spells order by id limit 1 offset 3) as spell_d_id,
   (select id from public.invocations order by id limit 1) as invocation_a_id,
   (select id from public.subclasses limit 1) as subclass_a_id;
 grant select on lvlup_fixture to anon, authenticated;
@@ -880,6 +899,105 @@ select is(
   (select max_hp from public.characters where id = 'ac000000-0000-0000-0000-00000000000c'),
   9,
   'Entrée malformée : aucune écriture ne persiste -- max_hp toujours 9'
+);
+
+-- ===========================================================================
+-- Tests 51-56 : multiclassage dont les sorts de départ (`p_initial_spell_ids`)
+-- recoupent un sort DÉJÀ connu via une autre classe -- interaction avec D10
+-- (character_spells_unique_per_nature.sql, deux index uniques partiels par
+-- nature de ligne, pas encore mergé ici). Avant correctif, cet `insert`
+-- n'avait aucun garde `not exists` (contrairement au bloc des sorts innés
+-- raciaux juste en dessous) : une fois D10 posé, ce scénario de jeu
+-- parfaitement légitime (ex. "Soins"/Cure de blessures présent sur
+-- plusieurs listes de classe) ferait lever une violation de contrainte
+-- unique (23505) non interceptée, annulant toute la montée de niveau.
+-- Personnage Magicien niveau 1 qui connaît déjà spell_a (simulé comme déjà
+-- appris à la création, source_class_id = Magicien), qui multiclasse dans
+-- le Clerc (lanceur "préparé") avec des sorts de départ [spell_a, spell_d] :
+-- spell_a doit rester inchangé (toujours 'connu'/Magicien, jamais réécrit
+-- en 'préparé'/Clerc ni dupliqué), spell_d (réellement nouveau) doit être
+-- inséré normalement.
+-- ===========================================================================
+insert into public.characters (id, owner_id, max_hp, current_hp, temporary_hp)
+values ('ad000000-0000-0000-0000-00000000000d', 'b3b3b3b3-3333-3333-3333-333333333333', 10, 10, 0);
+insert into public.character_classes (id, character_id, class_id, level, is_primary, hit_dice_spent)
+select 'cd000000-0000-0000-0000-00000000000d', 'ad000000-0000-0000-0000-00000000000d', magicien_id, 1, true, 0
+from lvlup_fixture;
+-- int=16 (Magicien déjà possédé, défense en profondeur) et wis=14 (Clerc,
+-- nouvelle classe) : les deux prérequis de multiclassage doivent être
+-- remplis pour que cet appel teste bien le sujet (sorts), pas un rejet de
+-- prérequis.
+insert into public.character_ability_scores (character_id, ability_id, score)
+values
+  ('ad000000-0000-0000-0000-00000000000d', 'str', 10),
+  ('ad000000-0000-0000-0000-00000000000d', 'dex', 10),
+  ('ad000000-0000-0000-0000-00000000000d', 'con', 10),
+  ('ad000000-0000-0000-0000-00000000000d', 'int', 16),
+  ('ad000000-0000-0000-0000-00000000000d', 'wis', 14),
+  ('ad000000-0000-0000-0000-00000000000d', 'cha', 10);
+-- spell_a déjà connu via le Magicien, simulé en amont de cet appel (pas via
+-- le RPC) -- exactement le genre de ligne préexistante sur laquelle D10
+-- pose ses index uniques partiels.
+insert into public.character_spells (character_id, spell_id, status, source_class_id)
+select 'ad000000-0000-0000-0000-00000000000d', spell_a_id, 'connu', magicien_id
+from lvlup_fixture;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', 'b3b3b3b3-3333-3333-3333-333333333333', 'role', 'authenticated')::text,
+  true
+);
+select lives_ok(
+  $$ select public.apply_level_up(
+       p_character_id => 'ad000000-0000-0000-0000-00000000000d',
+       p_class_id => (select clerc_id from lvlup_fixture),
+       p_class_name => 'Clerc',
+       p_is_multiclassing => true,
+       p_hp_rolled => 4,
+       p_hp_method => 'moyenne',
+       p_hp_gain => 4,
+       p_initial_spell_ids => (select array[spell_a_id, spell_d_id] from lvlup_fixture)
+     ) $$,
+  'Multiclassage avec un sort de départ déjà connu via une autre classe : aucune erreur (pas de 23505 une fois D10 posé)'
+);
+reset role;
+
+select is(
+  (select count(*)::int from public.character_spells
+     where character_id = 'ad000000-0000-0000-0000-00000000000d'
+       and spell_id = (select spell_a_id from lvlup_fixture)),
+  1,
+  'Sort déjà connu : toujours UNE seule ligne après le multiclassage (pas dupliquée)'
+);
+select is(
+  (select status from public.character_spells
+     where character_id = 'ad000000-0000-0000-0000-00000000000d'
+       and spell_id = (select spell_a_id from lvlup_fixture)),
+  'connu',
+  'Sort déjà connu : statut inchangé (''connu''), pas réécrit en ''préparé'' par le multiclassage Clerc'
+);
+select is(
+  (select source_class_id from public.character_spells
+     where character_id = 'ad000000-0000-0000-0000-00000000000d'
+       and spell_id = (select spell_a_id from lvlup_fixture)),
+  (select magicien_id from lvlup_fixture),
+  'Sort déjà connu : source_class_id inchangé (toujours Magicien, pas écrasé par Clerc)'
+);
+select is(
+  (select count(*)::int from public.character_spells
+     where character_id = 'ad000000-0000-0000-0000-00000000000d'
+       and spell_id = (select spell_d_id from lvlup_fixture)
+       and status = 'préparé'
+       and source_class_id = (select clerc_id from lvlup_fixture)),
+  1,
+  'Sort réellement nouveau (spell_d) de la même liste : bien inséré, statut ''préparé'' (Clerc)'
+);
+select is(
+  (select count(*)::int from public.character_spells
+     where character_id = 'ad000000-0000-0000-0000-00000000000d'),
+  2,
+  'Total : 2 lignes character_spells (spell_a préexistant inchangé, spell_d nouveau) -- pas 3'
 );
 
 select * from finish();

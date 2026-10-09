@@ -96,9 +96,18 @@
 -- unique, doublon d'historique silencieux), inserait une SECONDE fois les
 -- sorts initiaux/invocations choisis (`character_invocations` a une cle
 -- primaire composite -- un REJOUE y leverait une erreur explicite de
--- doublon, donc PAS un risque silencieux la, mais `character_spells` n'a
--- aucune contrainte unique -- doublon silencieux), et re-executerait le
--- choix (un second don identique leverait une erreur de doublon sur
+-- doublon, donc PAS un risque silencieux la ; `character_spells`, depuis
+-- D10 (20261009090000_character_spells_unique_per_nature.sql, deux index
+-- uniques partiels par nature de ligne) n'est plus non plus un cas de
+-- doublon silencieux pour les sorts initiaux/innes de CETTE fonction : les
+-- deux `insert` concernes sont gardes par un `not exists` AVANT insertion
+-- (voir plus bas), donc un REJOUE les saute silencieusement sans erreur ET
+-- sans doublon -- toujours pas idempotent au sens strict (le second appel
+-- ne refait rien d'utile), mais sans echec ni duplication ici. A VERIFIER
+-- si une AUTRE insertion future dans cette table depuis cette fonction
+-- beneficierait du meme garde ou non), et re-executerait le choix (un
+-- second don identique
+-- leverait une erreur de doublon sur
 -- `character_feats`, PK composite -- pas silencieux ; mais une seconde
 -- repartition de caracteristiques ASI re-ajouterait les points une seconde
 -- fois, silencieusement, jusqu'au plafond de 20). Seuls les emplacements de
@@ -596,7 +605,11 @@ begin
     select p_character_id, x.spell_id,
            case when p_class_name in ('Clerc', 'Druide', 'Magicien', 'Paladin') then 'préparé' else 'connu' end,
            p_class_id
-    from unnest(p_initial_spell_ids) as x(spell_id);
+    from (select distinct unnest(p_initial_spell_ids) as spell_id) as x
+    where not exists (
+      select 1 from public.character_spells cs
+      where cs.character_id = p_character_id and cs.spell_id = x.spell_id
+    );
   end if;
 
   if array_length(p_invocation_ids, 1) > 0 then
