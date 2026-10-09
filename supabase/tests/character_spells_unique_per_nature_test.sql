@@ -10,16 +10,28 @@
 --        character_spells_innate_uses_test.sql pour la colonne
 --        innate_uses_spent -- ce fichier teste la contrainte d'unicité, pas
 --        cette colonne).
---   7-12. La requête de détection donnée en commentaire dans la migration
---        (reprise ici à l'identique, par nature) ne remonte rien tant qu'il
---        n'y a pas de doublon réel (7), puis les deux index sont retirés
+--   7-14. La requête de détection donnée en commentaire dans la migration
+--        (reprise ici à l'identique, groupée par (character_id, spell_id)
+--        SEUL -- sans status -- par nature) ne remonte rien tant qu'il n'y a
+--        pas de doublon réel (7), puis les deux index sont retirés
 --        temporairement pour injecter un vrai doublon de chaque nature sur
 --        un second personnage, et la requête détecte alors exactement ces
---        deux groupes avec le bon compte de lignes (8). Après nettoyage
---        manuel (suppression de la ligne en trop, comme la migration le
---        demande), les deux index se recréent sans erreur (9-10), la requête
---        de détection ne remonte plus rien (11), et les index recréés sont
---        bien marqués uniques dans le catalogue système (12).
+--        deux groupes avec le bon compte de lignes (8). On injecte ensuite un
+--        doublon CROISÉ de status ('connu' + 'préparé' sur le même sort,
+--        toujours nature "ordinaire") : c'est le bug corrigé ici -- l'ancienne
+--        requête groupait par status en plus, donc chaque status n'avait
+--        qu'une seule ligne et ne remontait jamais ce cas, alors que
+--        l'exception du do-block (qui groupe bien par (character_id,
+--        spell_id) seul) se déclenchait correctement. La requête corrigée le
+--        détecte bien (9), et la requête complémentaire d'identification des
+--        lignes individuelles (ajoutée par ce correctif, basée sur une
+--        window function partitionnée par nature) retrouve exactement les
+--        deux id de ce doublon croisé (10). Après nettoyage manuel
+--        (suppression de la ligne en trop de chacun des trois groupes, comme
+--        la migration le demande), les deux index se recréent sans erreur
+--        (11-12), la requête de détection ne remonte plus rien (13), et les
+--        index recréés sont bien marqués uniques dans le catalogue système
+--        (14).
 --
 -- Lancer : supabase test db supabase/tests --local (depuis la racine du
 -- dépôt web, stack locale démarrée au préalable via `supabase start`, base
@@ -29,11 +41,11 @@
 
 begin;
 
-select plan(12);
+select plan(14);
 
 -- Fixtures : un joueur propriétaire de deux personnages (l'un pour le test
 -- de contrainte sous RLS, l'autre pour le test de détection qui a besoin de
--- vraies lignes dupliquées en base), et trois sorts distincts.
+-- vraies lignes dupliquées en base), et quatre sorts distincts.
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
@@ -50,7 +62,8 @@ create temporary table pgtap_unique_spell_fixture on commit drop as
 select
   (select id from public.spells order by id limit 1) as spell_1,
   (select id from public.spells order by id offset 1 limit 1) as spell_2,
-  (select id from public.spells order by id offset 2 limit 1) as spell_3;
+  (select id from public.spells order by id offset 2 limit 1) as spell_3,
+  (select id from public.spells order by id offset 3 limit 1) as spell_4;
 grant select on pgtap_unique_spell_fixture to anon, authenticated;
 
 -- Bloc 1 : les index empêchent un doublon de même nature, sous RLS (en tant
@@ -133,19 +146,24 @@ reset role;
 -- Requête de détection réutilisée telle que documentée dans
 -- 20261009090000_character_spells_unique_per_nature.sql, restreinte aux
 -- personnages de ce test pour ne pas dépendre de ce qui existe par ailleurs.
+-- Groupée par (character_id, spell_id) SEUL, sans status dans le group by/
+-- select de la branche "ordinaire" (ni de la branche "inné", par cohérence
+-- de colonnes pour l'union all) : c'est le point corrigé par ce patch, pour
+-- que le groupe remonte bien même si les deux lignes en trop n'ont pas le
+-- même status (ex. 'connu' + 'préparé' sur le même sort).
 create temporary table pgtap_unique_spell_detected on commit drop as
-select character_id, spell_id, status, count(*) as nb_lignes
+select character_id, spell_id, count(*) as nb_lignes
 from public.character_spells
 where character_id in ('eeeeeeee-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002')
   and status = 'inné'
-group by character_id, spell_id, status
+group by character_id, spell_id
 having count(*) > 1
 union all
-select character_id, spell_id, status, count(*) as nb_lignes
+select character_id, spell_id, count(*) as nb_lignes
 from public.character_spells
 where character_id in ('eeeeeeee-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002')
   and status <> 'inné'
-group by character_id, spell_id, status
+group by character_id, spell_id
 having count(*) > 1;
 
 -- Test 7 : avant toute manipulation, aucun doublon réel -- la requête ne
@@ -164,50 +182,111 @@ drop table pgtap_unique_spell_detected;
 drop index public.character_spells_unique_ordinary_per_spell;
 drop index public.character_spells_unique_innate_per_spell;
 
--- Doublon "ordinaire" réel sur spell_2 (deux lignes 'connu').
+-- Doublon "ordinaire" réel, même status, sur spell_2 (deux lignes 'connu').
 insert into public.character_spells (character_id, spell_id, status)
 select 'eeeeeeee-0000-0000-0000-000000000002', spell_2, 'connu' from pgtap_unique_spell_fixture;
 insert into public.character_spells (character_id, spell_id, status)
 select 'eeeeeeee-0000-0000-0000-000000000002', spell_2, 'connu' from pgtap_unique_spell_fixture;
 
--- Doublon "inné" réel sur spell_3 (deux lignes 'inné').
+-- Doublon "inné" réel, même status, sur spell_3 (deux lignes 'inné').
 insert into public.character_spells (character_id, spell_id, status)
 select 'eeeeeeee-0000-0000-0000-000000000002', spell_3, 'inné' from pgtap_unique_spell_fixture;
 insert into public.character_spells (character_id, spell_id, status)
 select 'eeeeeeee-0000-0000-0000-000000000002', spell_3, 'inné' from pgtap_unique_spell_fixture;
 
 create temporary table pgtap_unique_spell_detected on commit drop as
-select character_id, spell_id, status, count(*) as nb_lignes
+select character_id, spell_id, count(*) as nb_lignes
 from public.character_spells
 where character_id in ('eeeeeeee-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002')
   and status = 'inné'
-group by character_id, spell_id, status
+group by character_id, spell_id
 having count(*) > 1
 union all
-select character_id, spell_id, status, count(*) as nb_lignes
+select character_id, spell_id, count(*) as nb_lignes
 from public.character_spells
 where character_id in ('eeeeeeee-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002')
   and status <> 'inné'
-group by character_id, spell_id, status
+group by character_id, spell_id
 having count(*) > 1;
 
 -- Test 8 : la requête détecte exactement les deux groupes injectés, avec le
 -- bon compte de lignes chacun.
 select results_eq(
-  $$ select character_id, spell_id, status, nb_lignes
+  $$ select character_id, spell_id, nb_lignes
      from pgtap_unique_spell_detected
-     order by status $$,
-  $$ select 'eeeeeeee-0000-0000-0000-000000000002'::uuid, f.spell_2, 'connu'::text, 2::bigint from pgtap_unique_spell_fixture f
+     order by spell_id $$,
+  $$ select 'eeeeeeee-0000-0000-0000-000000000002'::uuid, f.spell_2, 2::bigint from pgtap_unique_spell_fixture f
      union all
-     select 'eeeeeeee-0000-0000-0000-000000000002'::uuid, f.spell_3, 'inné'::text, 2::bigint from pgtap_unique_spell_fixture f
-     order by 3 $$,
-  'La requête de détection remonte exactement les deux groupes dupliqués injectés, un par nature, avec 2 lignes chacun'
+     select 'eeeeeeee-0000-0000-0000-000000000002'::uuid, f.spell_3, 2::bigint from pgtap_unique_spell_fixture f
+     order by 2 $$,
+  'La requête de détection remonte exactement les deux groupes dupliqués injectés (même status chacun), avec 2 lignes chacun'
 );
 drop table pgtap_unique_spell_detected;
 
+-- Doublon "ordinaire" CROISÉ de status réel sur spell_4 : une ligne 'connu'
+-- et une ligne 'préparé' pour le même sort -- c'est précisément le cas que
+-- l'ancienne requête (qui groupait aussi par status) ne détectait jamais,
+-- puisque chaque status s'y retrouvait seul dans son groupe.
+insert into public.character_spells (character_id, spell_id, status)
+select 'eeeeeeee-0000-0000-0000-000000000002', spell_4, 'connu' from pgtap_unique_spell_fixture;
+insert into public.character_spells (character_id, spell_id, status)
+select 'eeeeeeee-0000-0000-0000-000000000002', spell_4, 'préparé' from pgtap_unique_spell_fixture;
+
+create temporary table pgtap_unique_spell_detected on commit drop as
+select character_id, spell_id, count(*) as nb_lignes
+from public.character_spells
+where character_id in ('eeeeeeee-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002')
+  and status = 'inné'
+group by character_id, spell_id
+having count(*) > 1
+union all
+select character_id, spell_id, count(*) as nb_lignes
+from public.character_spells
+where character_id in ('eeeeeeee-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002')
+  and status <> 'inné'
+group by character_id, spell_id
+having count(*) > 1;
+
+-- Test 9 : la requête corrigée détecte bien le doublon croisé de status sur
+-- spell_4, en plus des deux groupes déjà détectés au test 8 -- c'est le
+-- régression test du bug trouvé par qa-testeur.
+select results_eq(
+  $$ select character_id, spell_id, nb_lignes
+     from pgtap_unique_spell_detected
+     order by spell_id $$,
+  $$ select 'eeeeeeee-0000-0000-0000-000000000002'::uuid, f.spell_2, 2::bigint from pgtap_unique_spell_fixture f
+     union all
+     select 'eeeeeeee-0000-0000-0000-000000000002'::uuid, f.spell_3, 2::bigint from pgtap_unique_spell_fixture f
+     union all
+     select 'eeeeeeee-0000-0000-0000-000000000002'::uuid, f.spell_4, 2::bigint from pgtap_unique_spell_fixture f
+     order by 2 $$,
+  'La requête de détection corrigée détecte aussi le doublon ''connu''+''préparé'' (status croisés, même nature ordinaire) sur spell_4'
+);
+drop table pgtap_unique_spell_detected;
+
+-- Test 10 : la requête complémentaire d'identification des lignes
+-- individuelles (ajoutée par ce correctif, window function partitionnée par
+-- nature) retrouve exactement les deux id du doublon croisé de spell_4,
+-- avec leurs status respectifs -- c'est elle qui rend le message d'erreur
+-- réellement actionnable (lister les lignes, pas juste les groupes).
+select results_eq(
+  $$ select status from (
+       select id, character_id, spell_id, status,
+              count(*) over (partition by character_id, spell_id, (status = 'inné')) as nb_lignes_meme_nature
+       from public.character_spells
+       where character_id = 'eeeeeeee-0000-0000-0000-000000000002'
+         and spell_id = (select spell_4 from pgtap_unique_spell_fixture)
+     ) d
+     where nb_lignes_meme_nature > 1
+     order by status $$,
+  $$ values ('connu'::text), ('préparé'::text) $$,
+  'La requête d''identification par id retrouve les deux lignes individuelles (''connu'' et ''préparé'') du doublon croisé sur spell_4'
+);
+
 -- Nettoyage manuel comme demandé par le message d'erreur de la migration :
--- on supprime la ligne en trop de chaque groupe (choix arbitraire ici, sans
--- portée sur de vraies données -- ce sont des lignes de test injectées).
+-- on supprime la ligne en trop de chacun des trois groupes (choix arbitraire
+-- ici, sans portée sur de vraies données -- ce sont des lignes de test
+-- injectées).
 delete from public.character_spells
 where character_id = 'eeeeeeee-0000-0000-0000-000000000002'
   and spell_id = (select spell_2 from pgtap_unique_spell_fixture)
@@ -230,15 +309,26 @@ where character_id = 'eeeeeeee-0000-0000-0000-000000000002'
       and status = 'inné'
     limit 1
   );
+delete from public.character_spells
+where character_id = 'eeeeeeee-0000-0000-0000-000000000002'
+  and spell_id = (select spell_4 from pgtap_unique_spell_fixture)
+  and status = 'préparé'
+  and id = (
+    select id from public.character_spells
+    where character_id = 'eeeeeeee-0000-0000-0000-000000000002'
+      and spell_id = (select spell_4 from pgtap_unique_spell_fixture)
+      and status = 'préparé'
+    limit 1
+  );
 
--- Tests 9-10 : une fois le doublon nettoyé à la main, les deux index se
+-- Tests 11-12 : une fois les doublons nettoyés à la main, les deux index se
 -- recréent sans erreur -- exactement ce que la migration demande de faire
 -- avant de la rejouer.
 select lives_ok(
   $$ create unique index character_spells_unique_ordinary_per_spell
        on public.character_spells (character_id, spell_id)
        where status <> 'inné' $$,
-  'Après nettoyage manuel du doublon ordinaire, l''index unique se recrée sans erreur'
+  'Après nettoyage manuel des doublons ordinaires, l''index unique se recrée sans erreur'
 );
 select lives_ok(
   $$ create unique index character_spells_unique_innate_per_spell
@@ -247,7 +337,7 @@ select lives_ok(
   'Après nettoyage manuel du doublon inné, l''index unique se recrée sans erreur'
 );
 
--- Test 11 : la requête de détection ne remonte plus rien après nettoyage.
+-- Test 13 : la requête de détection ne remonte plus rien après nettoyage.
 select is(
   (
     select count(*)::int from (
@@ -267,10 +357,10 @@ select is(
     ) d
   ),
   0,
-  'La requête de détection ne remonte plus rien une fois le doublon nettoyé à la main'
+  'La requête de détection ne remonte plus rien une fois les doublons nettoyés à la main'
 );
 
--- Test 12 : les index recréés sont bien de vrais index uniques du catalogue
+-- Test 14 : les index recréés sont bien de vrais index uniques du catalogue
 -- (pas juste "n'a pas levé d'erreur") -- vérifie qu'ils apparaissent avec le
 -- bon flag indisunique.
 select ok(

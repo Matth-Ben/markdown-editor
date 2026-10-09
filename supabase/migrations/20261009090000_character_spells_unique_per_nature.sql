@@ -70,19 +70,30 @@ begin
 
   if v_duplicate_innate_groups > 0 or v_duplicate_ordinary_groups > 0 then
     raise exception
-      'character_spells contient des doublons reels : % groupe(s) (character_id, spell_id) avec plusieurs lignes "inne", % groupe(s) avec plusieurs lignes "ordinaires" (connu/prepare). Cette migration NE SUPPRIME RIEN automatiquement (donnee de joueur, trop risque de choisir seul la ligne a garder). Pour lister les lignes concernees avant de decider manuellement lesquelles supprimer, lancer :
+      'character_spells contient des doublons reels : % groupe(s) (character_id, spell_id) avec plusieurs lignes "inne", % groupe(s) avec plusieurs lignes "ordinaires" (connu/prepare). Cette migration NE SUPPRIME RIEN automatiquement (donnee de joueur, trop risque de choisir seul la ligne a garder). Pour lister les groupes concernes avant de decider manuellement lesquelles supprimer, lancer (groupee par (character_id, spell_id) SEUL, pas par status -- un doublon peut croiser les status, ex. ''connu'' + ''prepare'' sur le meme sort, et ne pas remonter si on groupe par status aussi) :
 
-select character_id, spell_id, status, count(*) as nb_lignes
+select character_id, spell_id, count(*) as nb_lignes
 from public.character_spells
 where status = ''inné''
-group by character_id, spell_id, status
+group by character_id, spell_id
 having count(*) > 1
 union all
-select character_id, spell_id, status, count(*) as nb_lignes
+select character_id, spell_id, count(*) as nb_lignes
 from public.character_spells
 where status <> ''inné''
-group by character_id, spell_id, status
+group by character_id, spell_id
 having count(*) > 1;
+
+Puis, pour identifier precisement les lignes (id) a supprimer dans chaque groupe remonte ci-dessus :
+
+select id, character_id, spell_id, status
+from (
+  select id, character_id, spell_id, status,
+         count(*) over (partition by character_id, spell_id, (status = ''inné'')) as nb_lignes_meme_nature
+  from public.character_spells
+) d
+where nb_lignes_meme_nature > 1
+order by character_id, spell_id, status, id;
 
 Une fois les lignes en trop supprimees a la main (apres revue au cas par cas -- quelle ligne garder n''est pas une decision a automatiser), rejouer cette migration.',
       v_duplicate_innate_groups, v_duplicate_ordinary_groups;
