@@ -28,3 +28,6 @@
 alter table public.character_inventory
   add column if not exists weapon_slot text
   check (weapon_slot in ('principal', 'secondaire'));
+
+comment on column public.character_inventory.weapon_slot is
+  'Set d''armes équipées (''principal''/''secondaire'') ; NULL si l''arme n''est pas équipée dans un set. Un personnage peut équiper au plus deux sets simultanément (voir lib/features/characters/domain/weapon_slot.dart, dépôt mobile). Ne concerne pas l''arme de pacte (Pacte de la lame).';
