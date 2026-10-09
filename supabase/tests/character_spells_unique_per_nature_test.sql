@@ -1,4 +1,4 @@
--- Vérifie 20261009090000_character_spells_unique_per_nature.sql (chantier
+-- Vérifie 20261009100000_character_spells_unique_per_nature.sql (chantier
 -- "Personnages", app mobile, D10 du registre de dette technique mobile,
 -- suite de D56/D09) :
 --   1-6. Les deux index uniques partiels empêchent bien un second doublon de
@@ -144,7 +144,7 @@ reset role;
 -- vrais doublons -- impossible sous RLS tant que les index existent).
 
 -- Requête de détection réutilisée telle que documentée dans
--- 20261009090000_character_spells_unique_per_nature.sql, restreinte aux
+-- 20261009100000_character_spells_unique_per_nature.sql, restreinte aux
 -- personnages de ce test pour ne pas dépendre de ce qui existe par ailleurs.
 -- Groupée par (character_id, spell_id) SEUL, sans status dans le group by/
 -- select de la branche "ordinaire" (ni de la branche "inné", par cohérence
