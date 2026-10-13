@@ -254,6 +254,48 @@ Deno.test({
       );
 
       await t.step(
+        "character_id vide (chaîne vide) -> traité comme sans personnage, 200",
+        async () => {
+          const emptyCharGroupCode = `JGEC${suffix}`.toUpperCase().slice(0, 12);
+          const emptyCharGroupId = await createGroup(
+            owner.id,
+            emptyCharGroupCode,
+            `join-group empty-char ${suffix}`,
+          );
+          const gmEmptyCharUser = await createUser("gm-empty-char");
+          const gmEmptyCharEmail = `join-group-test-gm-empty-char-${suffix}@example.invalid`;
+          const gmEmptyCharToken = await signIn(gmEmptyCharEmail);
+
+          const res = await callJoinGroup(
+            { code: emptyCharGroupCode, character_id: "" },
+            gmEmptyCharToken,
+          );
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          assertEquals(body.group_id, emptyCharGroupId);
+
+          const { data: member, error } = await admin
+            .from("group_members")
+            .select("character_id")
+            .eq("group_id", emptyCharGroupId)
+            .eq("user_id", gmEmptyCharUser.id)
+            .maybeSingle();
+          if (error) throw error;
+          assertEquals(member?.character_id, null);
+        },
+      );
+
+      await t.step("character_id non-uuid -> 400 invalid_body", async () => {
+        const res = await callJoinGroup(
+          { code: groupCode, character_id: "not-a-uuid" },
+          playerToken,
+        );
+        assertEquals(res.status, 400);
+        const body = await res.json();
+        assertEquals(body.error, "invalid_body");
+      });
+
+      await t.step(
         "un deuxième membre sans personnage dans le même groupe -> 409 mj_already_assigned",
         async () => {
           const secondNoCharGroupCode = `JGNC2${suffix}`.toUpperCase().slice(0, 12);
