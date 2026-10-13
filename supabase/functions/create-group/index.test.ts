@@ -140,6 +140,52 @@ Deno.test({
         },
       );
 
+      await t.step(
+        "création sans character_id -> 200, group_members créée avec character_id=null, role=owner (MJ sans personnage, décision du 12/10/2026)",
+        async () => {
+          const res = await callCreateGroup(
+            { name: `Groupe sans personnage ${suffix}` },
+            ownerToken,
+          );
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          assertExists(body.id);
+          createdGroupIds.push(body.id);
+
+          const { data: member, error } = await admin
+            .from("group_members")
+            .select("group_id, character_id, user_id, role")
+            .eq("group_id", body.id)
+            .maybeSingle();
+          if (error) throw error;
+          assertExists(member);
+          assertEquals(member?.character_id, null);
+          assertEquals(member?.user_id, owner.id);
+          assertEquals(member?.role, "owner");
+        },
+      );
+
+      await t.step(
+        "création avec character_id vide (chaîne vide) -> traité comme sans personnage, 200",
+        async () => {
+          const res = await callCreateGroup(
+            { name: `Groupe character_id vide ${suffix}`, character_id: "" },
+            ownerToken,
+          );
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          createdGroupIds.push(body.id);
+
+          const { data: member, error } = await admin
+            .from("group_members")
+            .select("character_id")
+            .eq("group_id", body.id)
+            .maybeSingle();
+          if (error) throw error;
+          assertEquals(member?.character_id, null);
+        },
+      );
+
       await t.step("character_id n'appartenant pas à l'appelant -> 403 character_not_owned", async () => {
         const res = await callCreateGroup(
           { name: `Groupe invalide ${suffix}`, character_id: notOwnedCharacterId },

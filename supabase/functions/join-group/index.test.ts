@@ -223,6 +223,86 @@ Deno.test({
         },
       );
 
+      await t.step(
+        "rejoindre sans character_id -> 200, group_members créée avec character_id=null, role=membre (MJ sans personnage, décision du 12/10/2026)",
+        async () => {
+          const noCharGroupCode = `JGNC${suffix}`.toUpperCase().slice(0, 12);
+          const noCharGroupId = await createGroup(
+            owner.id,
+            noCharGroupCode,
+            `join-group no-char ${suffix}`,
+          );
+          const gmEmail = `join-group-test-other-player-${suffix}@example.invalid`;
+          const gmToken = await signIn(gmEmail);
+
+          const res = await callJoinGroup({ code: noCharGroupCode }, gmToken);
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          assertEquals(body.group_id, noCharGroupId);
+
+          const { data: member, error } = await admin
+            .from("group_members")
+            .select("character_id, role")
+            .eq("group_id", noCharGroupId)
+            .eq("user_id", otherPlayer.id)
+            .maybeSingle();
+          if (error) throw error;
+          assertExists(member);
+          assertEquals(member?.character_id, null);
+          assertEquals(member?.role, "membre");
+        },
+      );
+
+      await t.step(
+        "un deuxième membre sans personnage dans le même groupe -> 409 mj_already_assigned",
+        async () => {
+          const secondNoCharGroupCode = `JGNC2${suffix}`.toUpperCase().slice(0, 12);
+          await createGroup(owner.id, secondNoCharGroupCode, `join-group no-char 2 ${suffix}`);
+
+          const gmAEmail = `join-group-test-gm-a-${suffix}@example.invalid`;
+          const gmBEmail = `join-group-test-gm-b-${suffix}@example.invalid`;
+          await createUser("gm-a");
+          await createUser("gm-b");
+          const gmAToken = await signIn(gmAEmail);
+          const gmBToken = await signIn(gmBEmail);
+
+          const resA = await callJoinGroup({ code: secondNoCharGroupCode }, gmAToken);
+          assertEquals(resA.status, 200);
+
+          const resB = await callJoinGroup({ code: secondNoCharGroupCode }, gmBToken);
+          assertEquals(resB.status, 409);
+          const bodyB = await resB.json();
+          assertEquals(bodyB.error, "mj_already_assigned");
+        },
+      );
+
+      await t.step(
+        "course entre deux requêtes concurrentes sans character_id -> une seule réussit, l'autre 409 mj_already_assigned (contrainte unique 23505)",
+        async () => {
+          const raceNoCharCode = `JGNCR${suffix}`.toUpperCase().slice(0, 12);
+          await createGroup(owner.id, raceNoCharCode, `join-group no-char race ${suffix}`);
+
+          const gmRaceAEmail = `join-group-test-gm-race-a-${suffix}@example.invalid`;
+          const gmRaceBEmail = `join-group-test-gm-race-b-${suffix}@example.invalid`;
+          await createUser("gm-race-a");
+          await createUser("gm-race-b");
+          const gmRaceAToken = await signIn(gmRaceAEmail);
+          const gmRaceBToken = await signIn(gmRaceBEmail);
+
+          const [resA, resB] = await Promise.all([
+            callJoinGroup({ code: raceNoCharCode }, gmRaceAToken),
+            callJoinGroup({ code: raceNoCharCode }, gmRaceBToken),
+          ]);
+
+          const statuses = [resA.status, resB.status].sort((a, b) => a - b);
+          assertEquals(statuses, [200, 409]);
+
+          const loser = resA.status === 200 ? resB : resA;
+          const loserBody = await loser.json();
+          assertEquals(loserBody.error, "mj_already_assigned");
+        },
+      );
+
       await t.step("requête sans JWT -> 401", async () => {
         const res = await callJoinGroup({ code: groupCode, character_id: playerCharacterId });
         assertEquals(res.status, 401);

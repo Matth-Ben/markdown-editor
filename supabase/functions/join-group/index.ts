@@ -5,21 +5,30 @@
 // exact de join-story pour le parcours "Rejoindre un groupe" : dernière
 // étape, après preview-group-invite (résoudre le code, afficher le nom/le
 // nombre de membres pour confirmation) et le choix du personnage côté
-// mobile -- crée le rattachement, donc ne doit être appelée qu'une fois le
-// joueur arrivé au bout du parcours avec un character_id choisi.
+// mobile (ou le choix explicite de rejoindre sans personnage, comme MJ) --
+// crée le rattachement, donc ne doit être appelée qu'une fois le joueur
+// arrivé au bout du parcours.
 //
 // Sans rapport avec la synchronisation "Histoires" (système de groupe propre
 // à l'app mobile, `groups.campaign_id` n'est pas exploité par cette
 // itération -- voir 12-partage-et-groupes.md section 4) : pas de
 // coordination requise avec l'équipe web pour cette fonction.
 //
-// Contrat : POST { code: string, character_id: string }, authentifié via le
-// JWT Supabase de l'utilisateur (header "Authorization: Bearer <jwt>").
+// Contrat : POST { code: string, character_id?: string }, authentifié via
+// le JWT Supabase de l'utilisateur (header "Authorization: Bearer <jwt>").
+// `character_id` est optionnel depuis la décision du 12/10/2026
+// (12-partage-et-groupes.md section 2, 20261013100000_group_member_without_
+// character.sql) : un joueur peut rejoindre un groupe SANS personnage, avec
+// le rôle de MJ -- absent, null ou chaîne vide sont tous traités comme "pas
+// de personnage" (`group_members.character_id = null`). Au plus UN membre
+// sans personnage par groupe (contrainte base
+// `group_members_one_null_character_per_group`).
 //   200 { group_id, name }
 //   400 { error: "invalid_body" }
 //   403 { error: "character_not_owned" }
 //   404 { error: "invalid_code" }
 //   409 { error: "already_in_group" }
+//   409 { error: "mj_already_assigned" }
 //   401 { error: "unauthorized" }             (authenticateRequest)
 //   500 { error: "internal_error" | "server_misconfigured" }
 //
@@ -31,17 +40,29 @@
 //   2. Résout le groupe via findJoinableGroup (mêmes erreurs que
 //      preview-group-invite -- code introuvable, pas de notion
 //      "désactivé" pour les groupes).
-//   3. Vérifie côté serveur (client service_role, jamais en confiance
-//      client) que character_id appartient bien à auth.uid().
+//   3. Si character_id est fourni, vérifie côté serveur (client
+//      service_role, jamais en confiance client) qu'il appartient bien à
+//      auth.uid(). Si absent, aucune vérification à faire (rien à
+//      vérifier) : l'appelant rejoint comme MJ sans personnage.
 //   4. Vérifie qu'aucune ligne group_members n'existe déjà pour
 //      (group_id, user_id=auth.uid()) -- contrainte unique
 //      `group_members_group_id_user_id_key` -- avant d'insérer : un joueur
-//      ne participe à un même groupe qu'avec UN SEUL personnage à la fois
+//      ne participe à un même groupe qu'avec UN SEUL rattachement à la fois
 //      (spec section 2.1), message clair plutôt qu'une 500 issue de la
 //      violation de contrainte brute.
-//   5. Insère group_members (group_id, character_id, user_id=auth.uid(),
-//      role='membre') via le client service_role.
-//   6. Retourne 200 { group_id, name } -- assez pour que le mobile navigue
+//   5. Si character_id est absent, vérifie qu'aucune ligne group_members
+//      sans personnage n'existe déjà pour ce groupe -- contrainte unique
+//      partielle `group_members_one_null_character_per_group` -- avant
+//      d'insérer : un seul MJ sans personnage par groupe, même message
+//      clair (`mj_already_assigned`) plutôt qu'une 500 brute.
+//   6. Insère group_members (group_id, character_id ou null,
+//      user_id=auth.uid(), role='membre') via le client service_role. Les
+//      vérifications 4 et 5 ci-dessus laissent malgré tout une fenêtre de
+//      course entre deux requêtes concurrentes (même limite que l'existant
+//      pour `already_in_group`) -- un filet de sécurité sur la violation de
+//      contrainte 23505 retraduit l'erreur en 409 explicite plutôt que de
+//      laisser passer une 500 brute.
+//   7. Retourne 200 { group_id, name } -- assez pour que le mobile navigue
 //      directement vers l'écran "Groupe" sans requête supplémentaire.
 
 import {
@@ -92,8 +113,15 @@ Deno.serve(async (req: Request) => {
   }
 
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  const characterId =
-    typeof body.character_id === "string" ? body.character_id : "";
+  // Absent, null ou chaîne vide -> pas de personnage (l'appelant rejoint
+  // comme MJ sans personnage). Distingué explicitement de "fourni mais
+  // invalide", qui doit rester une erreur 400 plutôt que d'être
+  // silencieusement traité comme absent.
+  const characterIdProvided =
+    typeof body.character_id === "string" && body.character_id.trim() !== "";
+  const characterId = characterIdProvided
+    ? (body.character_id as string).trim()
+    : null;
 
   if (!code) {
     return jsonResponse(
@@ -102,7 +130,7 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  if (!UUID_RE.test(characterId)) {
+  if (characterIdProvided && !UUID_RE.test(characterId as string)) {
     return jsonResponse(
       { error: "invalid_body", message: "character_id doit être un uuid valide." },
       400,
@@ -115,25 +143,27 @@ Deno.serve(async (req: Request) => {
   if ("errorResponse" in groupResult) return groupResult.errorResponse;
   const { group } = groupResult;
 
-  const { data: character, error: characterError } = await admin
-    .from("characters")
-    .select("id, owner_id")
-    .eq("id", characterId)
-    .maybeSingle();
+  if (characterIdProvided) {
+    const { data: character, error: characterError } = await admin
+      .from("characters")
+      .select("id, owner_id")
+      .eq("id", characterId as string)
+      .maybeSingle();
 
-  if (characterError) {
-    console.error("join-group: erreur de lecture characters", characterError);
-    return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
-  }
+    if (characterError) {
+      console.error("join-group: erreur de lecture characters", characterError);
+      return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+    }
 
-  if (!character || character.owner_id !== user.id) {
-    return jsonResponse(
-      {
-        error: "character_not_owned",
-        message: "Ce personnage ne vous appartient pas.",
-      },
-      403,
-    );
+    if (!character || character.owner_id !== user.id) {
+      return jsonResponse(
+        {
+          error: "character_not_owned",
+          message: "Ce personnage ne vous appartient pas.",
+        },
+        403,
+      );
+    }
   }
 
   const { data: existing, error: existingError } = await admin
@@ -152,16 +182,50 @@ Deno.serve(async (req: Request) => {
   }
 
   if (existing) {
+    // null === null -> true : couvre aussi le cas "déjà membre sans
+    // personnage" (MJ), pas seulement l'égalité entre deux character_id.
     const sameCharacter = existing.character_id === characterId;
-    return jsonResponse(
-      {
-        error: "already_in_group",
-        message: sameCharacter
-          ? "Vous êtes déjà membre de ce groupe avec ce personnage."
-          : "Vous participez déjà à ce groupe avec un autre personnage.",
-      },
-      409,
-    );
+    const message = characterId === null
+      ? (existing.character_id === null
+        ? "Vous êtes déjà membre de ce groupe sans personnage (MJ)."
+        : "Vous participez déjà à ce groupe avec un personnage.")
+      : (sameCharacter
+        ? "Vous êtes déjà membre de ce groupe avec ce personnage."
+        : "Vous participez déjà à ce groupe avec un autre personnage.");
+    return jsonResponse({ error: "already_in_group", message }, 409);
+  }
+
+  // Un seul MJ sans personnage par groupe (contrainte base
+  // `group_members_one_null_character_per_group`,
+  // 20261013100000_group_member_without_character.sql) : contrôle
+  // applicatif avant l'insert pour un message d'erreur clair -- la
+  // violation de contrainte en cas de course est quand même retraduite
+  // plus bas (filet de sécurité).
+  if (characterId === null) {
+    const { data: existingMj, error: existingMjError } = await admin
+      .from("group_members")
+      .select("id")
+      .eq("group_id", group.id)
+      .is("character_id", null)
+      .maybeSingle();
+
+    if (existingMjError) {
+      console.error(
+        "join-group: erreur de lecture group_members (MJ sans personnage)",
+        existingMjError,
+      );
+      return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+    }
+
+    if (existingMj) {
+      return jsonResponse(
+        {
+          error: "mj_already_assigned",
+          message: "Ce groupe a déjà un MJ sans personnage.",
+        },
+        409,
+      );
+    }
   }
 
   const { error: insertError } = await admin.from("group_members").insert({
@@ -172,10 +236,29 @@ Deno.serve(async (req: Request) => {
   });
 
   if (insertError) {
-    // 23505 = unique_violation sur (group_id, user_id) ou (group_id,
-    // character_id) : filet de sécurité en cas de course avec une autre
-    // requête entre la vérification ci-dessus et cet insert.
+    // 23505 = unique_violation : filet de sécurité en cas de course avec
+    // une autre requête entre les vérifications ci-dessus et cet insert.
+    // Trois contraintes uniques peuvent déclencher ce code
+    // (20261013100000_group_member_without_character.sql pour les deux
+    // dernières) :
+    //   - group_members_group_id_user_id_key -> already_in_group
+    //   - group_members_group_id_character_id_key -> already_in_group
+    //     (ne peut en pratique jamais se produire ici : un personnage
+    //     n'appartient qu'à un seul utilisateur, déjà couvert par la
+    //     contrainte précédente, mais le filet reste correct si ça change)
+    //   - group_members_one_null_character_per_group -> mj_already_assigned
     if (insertError.code === UNIQUE_VIOLATION_CODE) {
+      const constraintHint =
+        `${insertError.message ?? ""} ${insertError.details ?? ""}`;
+      if (constraintHint.includes("group_members_one_null_character_per_group")) {
+        return jsonResponse(
+          {
+            error: "mj_already_assigned",
+            message: "Ce groupe a déjà un MJ sans personnage.",
+          },
+          409,
+        );
+      }
       // Message neutre plutôt que "avec un autre personnage" : dans ce
       // filet de sécurité (course avec une autre requête concurrente), on
       // ne sait pas si le gagnant de la course a utilisé le MÊME personnage
