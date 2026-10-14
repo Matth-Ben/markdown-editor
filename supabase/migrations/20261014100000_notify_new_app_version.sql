@@ -75,33 +75,58 @@ begin
     where coalesce(np.push_enabled, true)
       and coalesce(np.push_new_version_available, true)
   loop
-    perform private.invoke_edge_function(
-      'send-push-notification',
-      jsonb_build_object(
-        'userId', v_recipient.user_id,
-        'title', 'Nouvelle version disponible',
-        'body', 'Une nouvelle version de Nexus JDR est disponible — mets-la à jour pour profiter des dernières améliorations.',
-        'data', jsonb_build_object(
-          'type', 'new_version',
-          'platform', new.platform,
-          'version', new.latest_version
+    -- Sous-bloc dédié par destinataire : `private.invoke_edge_function`
+    -- journalise déjà ses propres erreurs (pg_net, secrets Vault absents) et
+    -- ne lève jamais en pratique, mais un échec qui lui échapperait malgré
+    -- tout (ex. erreur de construction de jsonb_build_object pour une ligne
+    -- précise) ne doit interrompre que CE destinataire, jamais toute la
+    -- boucle -- sans ce `begin/exception` local, une seule exception non
+    -- rattrapée au milieu du lot empêcherait tous les destinataires suivants
+    -- d'être notifiés.
+    begin
+      perform private.invoke_edge_function(
+        'send-push-notification',
+        jsonb_build_object(
+          'userId', v_recipient.user_id,
+          'title', 'Nouvelle version disponible',
+          'body', 'Une nouvelle version de Nexus JDR est disponible — mets-la à jour pour profiter des dernières améliorations.',
+          'data', jsonb_build_object(
+            'type', 'new_version',
+            'platform', new.platform,
+            'version', new.latest_version
+          )
         )
-      )
-    );
+      );
+    exception when others then
+      raise warning 'notify_new_app_version: échec de notification pour % (%): %', v_recipient.user_id, sqlstate, sqlerrm;
+    end;
   end loop;
 
   return new;
 exception when others then
-  -- Ne jamais faire échouer l'INSERT/UPDATE sur app_versions (le geste de
-  -- l'admin qui publie la version) à cause d'un problème côté notification —
-  -- même philosophie que notify_character_campaign_access_revoked.
+  -- Filet de sécurité de dernier recours : couvre une erreur en dehors de la
+  -- boucle elle-même (ex. le SELECT du FOR qui échouerait), le corps de la
+  -- boucle ayant désormais son propre `begin/exception` par destinataire
+  -- juste au-dessus. Ne jamais faire échouer l'INSERT/UPDATE sur
+  -- app_versions (le geste de l'admin qui publie la version) à cause d'un
+  -- problème côté notification — même philosophie que
+  -- notify_character_campaign_access_revoked.
   raise warning 'notify_new_app_version: erreur (%): %', sqlstate, sqlerrm;
   return new;
 end;
 $$;
 
 comment on function public.notify_new_app_version() is
-  'Trigger AFTER INSERT OR UPDATE OF latest_version ON app_versions : notifie (push) tous les utilisateurs éligibles (notification_preferences.push_enabled/push_new_version_available, défaut true si absent de ligne) qu''une nouvelle version de l''app mobile est disponible. Ne fait rien sur UPDATE si latest_version n''a pas réellement changé.';
+  'Trigger AFTER INSERT OR UPDATE OF latest_version ON app_versions : notifie (push) tous les utilisateurs éligibles (notification_preferences.push_enabled/push_new_version_available, défaut true si absent de ligne) qu''une nouvelle version de l''app mobile est disponible. Ne fait rien sur UPDATE si latest_version n''a pas réellement changé. Un échec de notification pour un destinataire donné n''empêche jamais les autres d''être notifiés.';
+
+-- Défense en profondeur : pas exploitable aujourd'hui (Postgres n'autorise
+-- déjà aucun appel direct d'une fonction trigger via l'API, et cette
+-- fonction n'est de toute façon jamais invoquée que par le trigger
+-- ci-dessous), mais aligné avec le même `revoke` déjà posé sur les fonctions
+-- trigger de ce dépôt -- voir
+-- 20260919090000_create_content_proposals.sql:133
+-- (public.trg_refresh_proposal_counts).
+revoke all on function public.notify_new_app_version() from public;
 
 create trigger app_versions_notify_new_version
 after insert or update of latest_version on public.app_versions

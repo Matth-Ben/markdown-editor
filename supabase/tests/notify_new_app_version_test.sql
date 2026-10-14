@@ -2,9 +2,11 @@
 -- par 20261014090000_add_notification_push_new_version_available.sql) :
 -- le trigger sur public.app_versions notifie bien sur INSERT et sur UPDATE
 -- avec changement réel de latest_version, reste muet sur un UPDATE sans
--- changement réel (même valeur, ou colonne non touchée), et respecte
+-- changement réel (même valeur, ou colonne non touchée), respecte
 -- notification_preferences.push_enabled/push_new_version_available (défaut
--- true si absent de ligne).
+-- true si absent de ligne), et isole l'échec d'un destinataire du reste du
+-- lot (étape 5 -- le `begin/exception` par destinataire dans la boucle de
+-- notify_new_app_version()).
 --
 -- `private.invoke_edge_function` est remplacée ici par un double de test qui
 -- capture ses appels dans une table temporaire au lieu de faire un vrai
@@ -22,7 +24,7 @@
 
 begin;
 
-select plan(7);
+select plan(10);
 
 -- ---------------------------------------------------------------------------
 -- Double de test de private.invoke_edge_function (voir commentaire d'en-tête)
@@ -152,6 +154,61 @@ select is(
   (select count(*)::int from captured_invoke_calls),
   0,
   'UPDATE qui ne touche pas latest_version ne doit même pas déclencher le trigger'
+);
+
+-- ---------------------------------------------------------------------------
+-- Étape 5 : un échec individuel (exception non rattrapée par
+-- private.invoke_edge_function elle-même) pour UN destinataire ne doit
+-- jamais empêcher les destinataires suivants du même lot d'être notifiés --
+-- voir le `begin/exception` par destinataire dans la boucle de
+-- notify_new_app_version(). userD (inséré avant userE) est configuré pour
+-- faire lever une exception dans le double de test ; userE, inséré après
+-- lui, sert à prouver que l'itération se poursuit malgré l'échec de userD.
+-- ---------------------------------------------------------------------------
+insert into auth.users (
+  id, instance_id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+values
+  ('66660000-6666-6666-6666-666600000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-new-version-d@test.local', crypt('password123', gen_salt('bf')), now(), '{}', '{}', now(), now()),
+  ('66660000-6666-6666-6666-666600000005', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-new-version-e@test.local', crypt('password123', gen_salt('bf')), now(), '{}', '{}', now(), now());
+
+-- Remplace le double par une variante qui simule un échec pour userD
+-- spécifiquement (ni prefs ni filtrage en cause -- un pur incident), avant
+-- d'insérer dans captured_invoke_calls pour tous les autres.
+create or replace function private.invoke_edge_function(p_function_name text, p_body jsonb)
+returns bigint
+language plpgsql
+as $$
+begin
+  if p_body->>'userId' = '66660000-6666-6666-6666-666600000004' then
+    raise exception 'pgtap: échec simulé pour vérifier l''isolation par destinataire';
+  end if;
+  insert into captured_invoke_calls (function_name, body) values (p_function_name, p_body);
+  return null;
+end;
+$$;
+
+truncate captured_invoke_calls;
+
+update public.app_versions set latest_version = '2.0.2' where platform = 'android';
+
+select is(
+  (select count(*)::int from captured_invoke_calls where body->>'userId' = '66660000-6666-6666-6666-666600000004'),
+  0,
+  'userD (échec simulé) ne doit avoir aucune ligne capturée -- son propre échec ne lui envoie rien, sans surprise'
+);
+
+select is(
+  (select count(*)::int from captured_invoke_calls where body->>'userId' = '66660000-6666-6666-6666-666600000001'),
+  1,
+  'userA doit toujours être notifié malgré l''échec simulé sur un autre destinataire du même lot'
+);
+
+select is(
+  (select count(*)::int from captured_invoke_calls where body->>'userId' = '66660000-6666-6666-6666-666600000005'),
+  1,
+  'userE (inséré après userD) doit être notifié -- preuve que la boucle se poursuit après l''échec de userD au lieu de s''arrêter net'
 );
 
 select * from finish();
