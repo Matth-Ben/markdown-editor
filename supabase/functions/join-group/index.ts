@@ -20,9 +20,13 @@
 // (12-partage-et-groupes.md section 2, 20261013100000_group_member_without_
 // character.sql) : un joueur peut rejoindre un groupe SANS personnage, avec
 // le rôle de MJ -- absent, null ou chaîne vide sont tous traités comme "pas
-// de personnage" (`group_members.character_id = null`). Au plus UN membre
-// sans personnage par groupe (contrainte base
-// `group_members_one_null_character_per_group`).
+// de personnage" (`group_members.character_id = null`, `is_game_master =
+// true`). Au plus UN membre MJ volontaire par groupe (contrainte base
+// `group_members_one_game_master_per_group`,
+// 20261016090000_group_members_orphan_character.sql -- ne compte plus un
+// membre ORPHELIN, `is_game_master = false`, dont le personnage a été
+// supprimé après coup : voir cette migration pour le détail de la
+// distinction).
 //   200 { group_id, name }
 //   400 { error: "invalid_body" }
 //   403 { error: "character_not_owned" }
@@ -50,13 +54,19 @@
 //      ne participe à un même groupe qu'avec UN SEUL rattachement à la fois
 //      (spec section 2.1), message clair plutôt qu'une 500 issue de la
 //      violation de contrainte brute.
-//   5. Si character_id est absent, vérifie qu'aucune ligne group_members
-//      sans personnage n'existe déjà pour ce groupe -- contrainte unique
-//      partielle `group_members_one_null_character_per_group` -- avant
-//      d'insérer : un seul MJ sans personnage par groupe, même message
-//      clair (`mj_already_assigned`) plutôt qu'une 500 brute.
+//   5. Si character_id est absent, vérifie qu'aucun MJ VOLONTAIRE
+//      (character_id is null ET is_game_master = true) n'existe déjà pour ce
+//      groupe -- contrainte unique partielle
+//      `group_members_one_game_master_per_group`
+//      (20261016090000_group_members_orphan_character.sql) -- avant
+//      d'insérer : un seul MJ sans personnage par groupe, même message clair
+//      (`mj_already_assigned`) plutôt qu'une 500 brute. Un membre ORPHELIN
+//      (personnage supprimé après coup, is_game_master = false) ne compte
+//      PAS dans cette vérification -- ce n'est pas un MJ, il ne doit jamais
+//      bloquer un vrai MJ qui rejoint.
 //   6. Insère group_members (group_id, character_id ou null,
-//      user_id=auth.uid(), role='membre') via le client service_role. Les
+//      user_id=auth.uid(), role='membre', is_game_master=true si
+//      character_id est absent) via le client service_role. Les
 //      vérifications 4 et 5 ci-dessus laissent malgré tout une fenêtre de
 //      course entre deux requêtes concurrentes (même limite que l'existant
 //      pour `already_in_group`) -- un filet de sécurité sur la violation de
@@ -117,8 +127,8 @@ Deno.serve(async (req: Request) => {
   // comme MJ sans personnage). Distingué explicitement de "fourni mais
   // invalide", qui doit rester une erreur 400 plutôt que d'être
   // silencieusement traité comme absent.
-  const characterIdProvided =
-    typeof body.character_id === "string" && body.character_id.trim() !== "";
+  const characterIdProvided = typeof body.character_id === "string" &&
+    body.character_id.trim() !== "";
   const characterId = characterIdProvided
     ? (body.character_id as string).trim()
     : null;
@@ -132,7 +142,10 @@ Deno.serve(async (req: Request) => {
 
   if (characterIdProvided && !UUID_RE.test(characterId as string)) {
     return jsonResponse(
-      { error: "invalid_body", message: "character_id doit être un uuid valide." },
+      {
+        error: "invalid_body",
+        message: "character_id doit être un uuid valide.",
+      },
       400,
     );
   }
@@ -152,7 +165,10 @@ Deno.serve(async (req: Request) => {
 
     if (characterError) {
       console.error("join-group: erreur de lecture characters", characterError);
-      return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+      return jsonResponse({
+        error: "internal_error",
+        message: "Erreur serveur.",
+      }, 500);
     }
 
     if (!character || character.owner_id !== user.id) {
@@ -178,7 +194,10 @@ Deno.serve(async (req: Request) => {
       "join-group: erreur de lecture group_members",
       existingError,
     );
-    return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+    return jsonResponse(
+      { error: "internal_error", message: "Erreur serveur." },
+      500,
+    );
   }
 
   if (existing) {
@@ -195,18 +214,22 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "already_in_group", message }, 409);
   }
 
-  // Un seul MJ sans personnage par groupe (contrainte base
-  // `group_members_one_null_character_per_group`,
-  // 20261013100000_group_member_without_character.sql) : contrôle
+  // Un seul MJ VOLONTAIRE sans personnage par groupe (contrainte base
+  // `group_members_one_game_master_per_group`,
+  // 20261016090000_group_members_orphan_character.sql) : contrôle
   // applicatif avant l'insert pour un message d'erreur clair -- la
   // violation de contrainte en cas de course est quand même retraduite
-  // plus bas (filet de sécurité).
+  // plus bas (filet de sécurité). `is_game_master` (pas seulement
+  // `character_id is null`) exclut volontairement les membres ORPHELINS
+  // (personnage supprimé après coup) de cette vérification : un orphelin
+  // n'est pas un MJ et ne doit jamais bloquer un vrai MJ qui rejoint.
   if (characterId === null) {
     const { data: existingMj, error: existingMjError } = await admin
       .from("group_members")
       .select("id")
       .eq("group_id", group.id)
       .is("character_id", null)
+      .eq("is_game_master", true)
       .maybeSingle();
 
     if (existingMjError) {
@@ -214,7 +237,10 @@ Deno.serve(async (req: Request) => {
         "join-group: erreur de lecture group_members (MJ sans personnage)",
         existingMjError,
       );
-      return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+      return jsonResponse({
+        error: "internal_error",
+        message: "Erreur serveur.",
+      }, 500);
     }
 
     if (existingMj) {
@@ -233,24 +259,27 @@ Deno.serve(async (req: Request) => {
     character_id: characterId,
     user_id: user.id,
     role: "membre",
+    is_game_master: characterId === null,
   });
 
   if (insertError) {
     // 23505 = unique_violation : filet de sécurité en cas de course avec
     // une autre requête entre les vérifications ci-dessus et cet insert.
     // Trois contraintes uniques peuvent déclencher ce code
-    // (20261013100000_group_member_without_character.sql pour les deux
+    // (20261013100000_group_member_without_character.sql et
+    // 20261016090000_group_members_orphan_character.sql pour les deux
     // dernières) :
     //   - group_members_group_id_user_id_key -> already_in_group
     //   - group_members_group_id_character_id_key -> already_in_group
     //     (ne peut en pratique jamais se produire ici : un personnage
     //     n'appartient qu'à un seul utilisateur, déjà couvert par la
     //     contrainte précédente, mais le filet reste correct si ça change)
-    //   - group_members_one_null_character_per_group -> mj_already_assigned
+    //   - group_members_one_game_master_per_group -> mj_already_assigned
     if (insertError.code === UNIQUE_VIOLATION_CODE) {
-      const constraintHint =
-        `${insertError.message ?? ""} ${insertError.details ?? ""}`;
-      if (constraintHint.includes("group_members_one_null_character_per_group")) {
+      const constraintHint = `${insertError.message ?? ""} ${
+        insertError.details ?? ""
+      }`;
+      if (constraintHint.includes("group_members_one_game_master_per_group")) {
         return jsonResponse(
           {
             error: "mj_already_assigned",
@@ -273,7 +302,10 @@ Deno.serve(async (req: Request) => {
       );
     }
     console.error("join-group: erreur d'insertion group_members", insertError);
-    return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+    return jsonResponse(
+      { error: "internal_error", message: "Erreur serveur." },
+      500,
+    );
   }
 
   return jsonResponse({ group_id: group.id, name: group.name });
