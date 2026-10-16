@@ -13,7 +13,10 @@
 // (12-partage-et-groupes.md section 2, 20261013100000_group_member_without_
 // character.sql) : un joueur peut créer un groupe SANS personnage, avec le
 // rôle de MJ -- absent, null ou chaîne vide sont tous traités comme "pas de
-// personnage" (`group_members.character_id = null`). Comme le groupe vient
+// personnage" (`group_members.character_id = null`, `is_game_master = true`
+// -- voir 20261016090000_group_members_orphan_character.sql, qui distingue
+// ce MJ volontaire d'un futur membre ORPHELIN dont le personnage aurait été
+// supprimé après coup, `is_game_master = false`). Comme le groupe vient
 // d'être créé par cet appel, il ne peut jamais y avoir de course avec un
 // autre MJ-sans-personnage déjà présent (la contrainte "un seul MJ sans
 // personnage par groupe" ne peut donc jamais être violée ici -- elle ne
@@ -38,7 +41,8 @@
 //      via le client service_role -- voir
 //      ../_shared/group-invite.ts#insertGroupWithGeneratedInviteCode.
 //   5. Insère `group_members` (group_id, character_id ou null,
-//      user_id=auth.uid(), role='owner') via le même client -- indispensable :
+//      user_id=auth.uid(), role='owner', is_game_master=true si
+//      character_id est absent) via le même client -- indispensable :
 //      le trigger groups_after_insert (20260906182601_create_groups.sql) ne
 //      crée que group_treasure, PAS group_members (il ne connaît pas le
 //      character_id choisi par le créateur) ; sans cette étape, le créateur
@@ -80,7 +84,9 @@ Deno.serve(async (req: Request) => {
 
   const config = readEnvConfig();
   if (!config) {
-    console.error("create-group: variables d'environnement Supabase manquantes");
+    console.error(
+      "create-group: variables d'environnement Supabase manquantes",
+    );
     return jsonResponse({ error: "server_misconfigured" }, 500);
   }
 
@@ -103,8 +109,8 @@ Deno.serve(async (req: Request) => {
   // personnage). Distingué explicitement de "fourni mais invalide", qui
   // doit rester une erreur 400 plutôt que d'être silencieusement traité
   // comme absent.
-  const characterIdProvided =
-    typeof body.character_id === "string" && body.character_id.trim() !== "";
+  const characterIdProvided = typeof body.character_id === "string" &&
+    body.character_id.trim() !== "";
   const characterId = characterIdProvided
     ? (body.character_id as string).trim()
     : null;
@@ -118,7 +124,10 @@ Deno.serve(async (req: Request) => {
 
   if (characterIdProvided && !UUID_RE.test(characterId as string)) {
     return jsonResponse(
-      { error: "invalid_body", message: "character_id doit être un uuid valide." },
+      {
+        error: "invalid_body",
+        message: "character_id doit être un uuid valide.",
+      },
       400,
     );
   }
@@ -133,8 +142,14 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (characterError) {
-      console.error("create-group: erreur de lecture characters", characterError);
-      return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+      console.error(
+        "create-group: erreur de lecture characters",
+        characterError,
+      );
+      return jsonResponse({
+        error: "internal_error",
+        message: "Erreur serveur.",
+      }, 500);
     }
 
     if (!character || character.owner_id !== user.id) {
@@ -160,6 +175,7 @@ Deno.serve(async (req: Request) => {
     character_id: characterId,
     user_id: user.id,
     role: "owner",
+    is_game_master: characterId === null,
   });
 
   if (memberError) {
@@ -177,8 +193,15 @@ Deno.serve(async (req: Request) => {
         rollbackError,
       );
     }
-    return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
+    return jsonResponse(
+      { error: "internal_error", message: "Erreur serveur." },
+      500,
+    );
   }
 
-  return jsonResponse({ id: group.id, name: group.name, invite_code: group.invite_code });
+  return jsonResponse({
+    id: group.id,
+    name: group.name,
+    invite_code: group.invite_code,
+  });
 });
