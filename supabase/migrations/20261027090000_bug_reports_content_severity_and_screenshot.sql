@@ -12,6 +12,28 @@
 --
 -- Aucune fonction (ni SECURITY DEFINER ni autre) n'est créée ici : pas de
 -- question de privilèges EXECUTE par défaut à révoquer.
+--
+-- Retour arrière (manuel, dans cet ordre) :
+--   1. drop policy "Users can upload their own bug report screenshots"
+--        on storage.objects;
+--   2. Vider le bucket via l'API Storage (dashboard, ou
+--      storage.from('bug-report-screenshots').remove(...) avec service_role)
+--      -- Storage refuse la suppression directe en SQL dans storage.objects --
+--      puis : delete from storage.buckets where id = 'bug-report-screenshots';
+--      (échoue tant qu'il reste des objets, FK storage.objects.bucket_id).
+--   3. alter table public.bug_reports
+--        drop constraint bug_reports_screenshot_path_owner_check,
+--        drop column screenshot_path;
+--      (les chemins enregistrés sont perdus).
+--   4. alter table public.bug_reports drop constraint bug_reports_severity_check;
+--      alter table public.bug_reports add constraint bug_reports_severity_check
+--        check (severity in ('mineur', 'majeur', 'bloquant'));
+--      ATTENTION : cette étape échoue s'il existe des lignes
+--      severity = 'contenu' -- il faut d'abord décider de leur sort
+--      (suppression ou reclassement manuel), ce que ce retour arrière ne
+--      tranche pas.
+--   5. Redéployer la version précédente de report-bug (qui n'accepte ni
+--      'contenu' ni screenshotPath) et de delete-account.
 
 -- ---------------------------------------------------------------------------
 -- 1. Sévérité 'contenu'
