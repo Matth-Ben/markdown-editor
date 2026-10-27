@@ -45,6 +45,14 @@ const DB_URL =
   Deno.env.get("SUPABASE_DB_URL") ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/report-bug`;
+const SCREENSHOT_BUCKET = "bug-report-screenshots";
+// PNG 1x1 transparent, pour les téléversements de test.
+const PNG_1X1 = Uint8Array.from(
+  atob(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  ),
+  (c) => c.charCodeAt(0),
+);
 const TEST_PASSWORD = "report-bug-tests-password-123!";
 
 function callReportBug(body: unknown, token?: string) {
@@ -72,6 +80,14 @@ Deno.test({
     const suffix = crypto.randomUUID().slice(0, 8);
     const createdUserIds: string[] = [];
     const createdCharacterIds: string[] = [];
+    const uploadedPaths: string[] = [];
+
+    function userClient(token: string) {
+      return createClient(SUPABASE_URL, ANON_KEY, {
+        auth: { persistSession: false },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+    }
 
     async function createUser(label: string) {
       const email = `report-bug-test-${label}-${suffix}@example.invalid`;
@@ -177,6 +193,147 @@ Deno.test({
         },
       );
 
+      await t.step("severity 'contenu' acceptée -> 200, ligne bug_reports severity=contenu", async () => {
+        const res = await callReportBug(
+          {
+            title: `bug de contenu ${suffix}`,
+            description: "La portée du sort Boule de feu est erronée.",
+            severity: "contenu",
+          },
+          reporterToken,
+        );
+        assertEquals(res.status, 200);
+        const responseBody = await res.json();
+        const rows = await sql`select severity, screenshot_path from public.bug_reports where id = ${responseBody.id}`;
+        assertEquals(rows[0].severity, "contenu");
+        assertEquals(rows[0].screenshot_path, null);
+      });
+
+      const other = await createUser("other");
+      const otherToken = await signIn(`report-bug-test-other-${suffix}@example.invalid`);
+      const screenshotPath = `${reporter.id}/${crypto.randomUUID()}.png`;
+
+      await t.step("Storage : le reporter téléverse sous <uid>/ (sans upsert) -> OK", async () => {
+        const { error } = await userClient(reporterToken)
+          .storage.from(SCREENSHOT_BUCKET)
+          .upload(screenshotPath, PNG_1X1, { contentType: "image/png" });
+        assertEquals(error, null);
+        uploadedPaths.push(screenshotPath);
+      });
+
+      await t.step("Storage : téléversement dans le dossier d'un autre utilisateur -> refusé", async () => {
+        const path = `${other.id}/${crypto.randomUUID()}.png`;
+        const { error } = await userClient(reporterToken)
+          .storage.from(SCREENSHOT_BUCKET)
+          .upload(path, PNG_1X1, { contentType: "image/png" });
+        assertExists(error);
+        uploadedPaths.push(path); // au cas où, pour le nettoyage
+      });
+
+      await t.step("Storage : sous-dossier sous <uid>/ -> refusé", async () => {
+        const path = `${reporter.id}/sub/${crypto.randomUUID()}.png`;
+        const { error } = await userClient(reporterToken)
+          .storage.from(SCREENSHOT_BUCKET)
+          .upload(path, PNG_1X1, { contentType: "image/png" });
+        assertExists(error);
+        uploadedPaths.push(path);
+      });
+
+      await t.step("Storage : type MIME non image -> refusé par le bucket", async () => {
+        const path = `${reporter.id}/${crypto.randomUUID()}.png`;
+        const { error } = await userClient(reporterToken)
+          .storage.from(SCREENSHOT_BUCKET)
+          .upload(path, new TextEncoder().encode("pas une image"), { contentType: "text/plain" });
+        assertExists(error);
+        uploadedPaths.push(path);
+      });
+
+      await t.step("Storage : bucket privé, aucune lecture/suppression côté client (même propriétaire)", async () => {
+        const reporterStorage = userClient(reporterToken).storage.from(SCREENSHOT_BUCKET);
+        const { data: downloaded, error: downloadError } = await reporterStorage.download(screenshotPath);
+        assertEquals(downloaded, null);
+        assertExists(downloadError);
+
+        const { data: signed } = await reporterStorage.createSignedUrl(screenshotPath, 60);
+        assertEquals(signed, null);
+
+        // remove() ne renvoie pas d'erreur sous RLS : il supprime 0 objet.
+        await reporterStorage.remove([screenshotPath]);
+        const stillThere = await sql`
+          select 1 from storage.objects where bucket_id = ${SCREENSHOT_BUCKET} and name = ${screenshotPath}
+        `;
+        assertEquals(stillThere.length, 1);
+
+        const { data: publicUrl } = reporterStorage.getPublicUrl(screenshotPath);
+        const publicRes = await fetch(publicUrl.publicUrl);
+        await publicRes.body?.cancel();
+        assert(publicRes.status >= 400, `URL publique inaccessible (reçu ${publicRes.status})`);
+      });
+
+      await t.step("screenshotPath valide (objet existant) -> 200, enregistré dans bug_reports.screenshot_path", async () => {
+        const res = await callReportBug(
+          {
+            title: `bug avec capture ${suffix}`,
+            description: "Voir la capture.",
+            severity: "majeur",
+            screenshotPath,
+          },
+          reporterToken,
+        );
+        assertEquals(res.status, 200);
+        const responseBody = await res.json();
+        const rows = await sql`select screenshot_path from public.bug_reports where id = ${responseBody.id}`;
+        assertEquals(rows[0].screenshot_path, screenshotPath);
+      });
+
+      await t.step("screenshotPath dans le dossier d'un autre utilisateur -> 400 invalid_body", async () => {
+        const res = await callReportBug(
+          { title: "t", description: "d", severity: "mineur", screenshotPath },
+          otherToken,
+        );
+        assertEquals(res.status, 400);
+        assertEquals((await res.json()).error, "invalid_body");
+      });
+
+      await t.step("screenshotPath mal formé (traversée, bucket inclus) -> 400 invalid_body", async () => {
+        for (const bad of [
+          `${reporter.id}/../${other.id}/x.png`,
+          `${SCREENSHOT_BUCKET}/${screenshotPath}`,
+          `${reporter.id}/x.gif`,
+        ]) {
+          const res = await callReportBug(
+            { title: "t", description: "d", severity: "mineur", screenshotPath: bad },
+            reporterToken,
+          );
+          assertEquals(res.status, 400, bad);
+          assertEquals((await res.json()).error, "invalid_body");
+        }
+      });
+
+      await t.step("screenshotPath bien formé mais objet absent -> 400 screenshot_not_found, aucune ligne", async () => {
+        const missing = `${reporter.id}/${crypto.randomUUID()}.png`;
+        const res = await callReportBug(
+          { title: `absent ${suffix}`, description: "d", severity: "mineur", screenshotPath: missing },
+          reporterToken,
+        );
+        assertEquals(res.status, 400);
+        assertEquals((await res.json()).error, "screenshot_not_found");
+        const rows = await sql`select 1 from public.bug_reports where screenshot_path = ${missing}`;
+        assertEquals(rows.length, 0);
+      });
+
+      await t.step("INSERT direct PostgREST avec le screenshot_path d'un autre -> refusé par la contrainte", async () => {
+        const { error } = await userClient(otherToken).from("bug_reports").insert({
+          reporter_id: other.id,
+          title: "t",
+          description: "d",
+          severity: "mineur",
+          screenshot_path: screenshotPath,
+        });
+        assertExists(error);
+        assertMatch(error.message, /bug_reports_screenshot_path_owner_check/);
+      });
+
       await t.step("title manquant -> 400 invalid_body", async () => {
         const res = await callReportBug(
           { description: "desc", severity: "mineur" },
@@ -229,7 +386,13 @@ Deno.test({
       // Nettoyage : suppression via la connexion postgres directe pour
       // characters, puis suppression des utilisateurs Auth (cascade vers
       // bug_reports via reporter_id on delete cascade -- voir
-      // 20260903100000_create_bug_reports.sql).
+      // 20260903100000_create_bug_reports.sql). Les captures téléversées
+      // sont d'abord retirées du bucket via l'API Storage (service_role) :
+      // Storage interdit la suppression directe en SQL.
+      if (uploadedPaths.length) {
+        const { error } = await admin.storage.from(SCREENSHOT_BUCKET).remove(uploadedPaths);
+        if (error) console.error("nettoyage Storage des captures de test en échec", error);
+      }
       if (createdCharacterIds.length) {
         await sql`delete from public.characters where id in ${sql(createdCharacterIds)}`;
       }
