@@ -33,6 +33,10 @@
 //     déposés sous `{userId}/` (portrait de personnage + avatar de profil,
 //     dans des sous-dossiers différents pour vérifier la récursion) absents
 //     après suppression.
+//   - Même nettoyage dans le bucket privé `bug-report-screenshots` : capture
+//     d'écran déposée sous `{userId}/` absente après suppression (et la ligne
+//     bug_reports qui la référence partie en cascade), tandis que la capture
+//     d'un AUTRE utilisateur reste en place.
 import { assertEquals, assertExists } from "jsr:@std/assert@1";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import postgres from "npm:postgres@3";
@@ -49,6 +53,7 @@ const DB_URL =
 
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/delete-account`;
 const PORTRAITS_BUCKET = "character-portraits";
+const SCREENSHOTS_BUCKET = "bug-report-screenshots";
 const TEST_PASSWORD = "delete-account-tests-password-123!";
 
 function callDeleteAccount(token?: string, body?: unknown) {
@@ -186,6 +191,33 @@ Deno.test({
       return { avatarPath, portraitPath };
     }
 
+    const uploadedScreenshotPaths: string[] = [];
+
+    /** Dépose une capture de signalement sous `{userId}/` avec le JWT de
+     * l'utilisateur (policy INSERT du bucket privé), comme le fait l'app. */
+    async function uploadBugReportScreenshot(token: string, userId: string) {
+      const client = createClient(SUPABASE_URL, ANON_KEY, {
+        auth: { persistSession: false },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const path = `${userId}/${crypto.randomUUID()}.png`;
+      const { error } = await client.storage
+        .from(SCREENSHOTS_BUCKET)
+        .upload(path, new Uint8Array([1, 2, 3, 4]), { contentType: "image/png" });
+      if (error) throw new Error(`Échec upload capture de test: ${error.message}`);
+      uploadedScreenshotPaths.push(path);
+      return path;
+    }
+
+    async function screenshotExists(path: string) {
+      const [folder, name] = path.split("/");
+      const { data, error } = await admin.storage
+        .from(SCREENSHOTS_BUCKET)
+        .list(folder, { search: name, limit: 10 });
+      if (error) throw new Error(`Échec list() captures: ${error.message}`);
+      return (data ?? []).some((f) => f.name === name);
+    }
+
     try {
       await t.step("requête sans JWT -> 401", async () => {
         const res = await callDeleteAccount();
@@ -233,6 +265,21 @@ Deno.test({
         cascadeUser.id,
         characterId,
       );
+      const screenshotPath = await uploadBugReportScreenshot(cascadeToken, cascadeUser.id);
+      const [bugReport] = await sql<{ id: string }[]>`
+        insert into public.bug_reports (reporter_id, title, description, severity, screenshot_path)
+        values (${cascadeUser.id}, 'Test capture', 'Test', 'contenu', ${screenshotPath})
+        returning id
+      `;
+      // Témoin : capture d'un autre utilisateur, qui ne doit PAS être touchée.
+      const bystander = await createUser("bystander");
+      const bystanderToken = await signIn(
+        `delete-account-test-bystander-${suffix}@example.invalid`,
+      );
+      const bystanderScreenshotPath = await uploadBugReportScreenshot(
+        bystanderToken,
+        bystander.id,
+      );
 
       await t.step(
         "sanity check -- les fixtures existent bien avant suppression",
@@ -247,6 +294,9 @@ Deno.test({
           assertEquals(await countRows("character_inventory", "character_id", characterId), 1);
           assertEquals(await countRows("character_campaigns", "character_id", characterId), 1);
           assertEquals(await countRows("stories", "id", storyId), 1);
+          assertEquals(await countRows("bug_reports", "id", bugReport.id), 1);
+          assertEquals(await screenshotExists(screenshotPath), true);
+          assertEquals(await screenshotExists(bystanderScreenshotPath), true);
 
           const { data: filesBefore, error } = await admin.storage
             .from(PORTRAITS_BUCKET)
@@ -309,7 +359,29 @@ Deno.test({
           void portraitPath;
         },
       );
+
+      await t.step(
+        "storage -- capture de signalement supprimée du bucket privé, ligne bug_reports partie en cascade",
+        async () => {
+          assertEquals(await screenshotExists(screenshotPath), false);
+          const { data: remaining } = await admin.storage
+            .from(SCREENSHOTS_BUCKET)
+            .list(cascadeUser.id, { limit: 10 });
+          assertEquals((remaining ?? []).length, 0);
+          assertEquals(await countRows("bug_reports", "id", bugReport.id), 0);
+        },
+      );
+
+      await t.step(
+        "storage -- la capture d'un autre utilisateur n'est pas touchée",
+        async () => {
+          assertEquals(await screenshotExists(bystanderScreenshotPath), true);
+        },
+      );
     } finally {
+      if (uploadedScreenshotPaths.length) {
+        await admin.storage.from(SCREENSHOTS_BUCKET).remove(uploadedScreenshotPaths);
+      }
       await sql.end();
       for (const userId of createdUserIds) {
         await admin.auth.admin.deleteUser(userId).catch(() => {});
