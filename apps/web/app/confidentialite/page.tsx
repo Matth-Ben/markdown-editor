@@ -84,8 +84,8 @@ const sections: Section[] = [
           <strong>Signalements de bug</strong> : titre, description et gravité
           que tu saisis, version de l’app, plateforme et, si tu le choisis, le
           personnage concerné ainsi qu’une capture d’écran. Cette capture est
-          stockée de façon privée : elle n’est visible que par nous et supprimée
-          avec ton compte.
+          stockée de façon privée : elle n’est visible que par nous et conservée
+          jusqu’à la suppression de ton compte.
         </li>
       </ul>
     ),
@@ -194,7 +194,8 @@ const sections: Section[] = [
         </li>
         <li>
           Signalements de bug : le temps nécessaire à leur traitement. Les
-          captures d’écran jointes sont supprimées définitivement avec ton
+          captures d’écran jointes sont conservées tant que ton compte existe,
+          même une fois le bug corrigé, et supprimées définitivement avec ton
           compte.
         </li>
       </ul>
