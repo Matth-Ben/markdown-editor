@@ -149,14 +149,17 @@ async function deleteUserFiles(
       const { error } = await admin.storage.from(bucket).remove(chunk);
       if (error) {
         console.error(
-          `delete-account: échec suppression storage ${bucket} (${chunk.length} fichier(s))`,
+          `delete-account: échec suppression storage (bucket=${bucket}, dossier=${userId}/, ${chunk.length} fichier(s)) -- purge manuelle à faire sous ce préfixe`,
           error,
         );
         // best-effort : on continue avec les lots suivants malgré l'échec.
       }
     }
   } catch (err) {
-    console.error(`delete-account: erreur inattendue lors du nettoyage storage ${bucket}`, err);
+    console.error(
+      `delete-account: erreur inattendue lors du nettoyage storage (bucket=${bucket}, dossier=${userId}/) -- purge manuelle à faire sous ce préfixe`,
+      err,
+    );
   }
 }
 
