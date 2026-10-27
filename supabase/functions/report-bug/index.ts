@@ -10,8 +10,45 @@
 //
 // Contrat : POST, authentifié (header "Authorization: Bearer <jwt>", comme
 // join-story/preview-story-invite). Corps JSON :
-//   { title: string, description: string, severity: "mineur"|"majeur"|"bloquant",
-//     appVersion?: string, platform?: string, characterId?: string (uuid) }
+//   {
+//     title: string,                 // requis, non vide après trim
+//     description: string,           // requis, non vide après trim
+//     severity: "mineur"|"majeur"|"bloquant"|"contenu",
+//                                    // requis ; "contenu" = contenu D&D
+//                                    // incorrect ou manquant
+//     appVersion?: string,
+//     platform?: string,
+//     characterId?: string (uuid),
+//     screenshotPath?: string        // facultatif, voir ci-dessous
+//   }
+//
+// Capture d'écran (facultative, une seule image max) — procédure côté app :
+//   1. Téléverser l'image dans le bucket Storage PRIVÉ
+//      `bug-report-screenshots` (SCREENSHOT_BUCKET), avec le JWT de
+//      l'utilisateur, au chemin :
+//          <auth.uid()>/<nom de fichier>
+//      - exactement un niveau de dossier, égal à l'uid de l'utilisateur
+//        connecté (en minuscules, tel que renvoyé par Supabase Auth) ;
+//      - nom de fichier : 1 à 128 caractères parmi [A-Za-z0-9._-], ne
+//        commençant pas par "." -- recommandé : "<uuid v4>.<ext>" ;
+//      - extension .jpg, .jpeg, .png ou .webp ; contentType image/jpeg,
+//        image/png ou image/webp ; 5 Mo max (limites du bucket) ;
+//      - SANS upsert (upsert: false, valeur par défaut) : le bucket n'expose
+//        aucune policy SELECT/UPDATE/DELETE côté client, l'upsert serait
+//        refusé. Corollaire : l'app ne peut ni relire ni supprimer l'image.
+//   2. Appeler report-bug avec screenshotPath = ce même chemin (sans le nom
+//      du bucket, sans "/" initial), ex.
+//          "3f0c…-…/9b2e…-….png"
+//   report-bug refuse (400 invalid_body) tout chemin qui ne commence pas par
+//   "<uid de l'appelant>/" ou ne respecte pas le format, et (400
+//   screenshot_not_found) un chemin bien formé dont l'objet n'existe pas
+//   dans le bucket. Le chemin est enregistré dans
+//   bug_reports.screenshot_path. L'issue GitHub (dépôt PUBLIC) ne contient
+//   ni l'image ni aucun lien, même signé : seulement la mention « Capture
+//   d'écran : jointe (consultable côté Supabase via l'id du signalement) ».
+//   Ni le chemin brut (il contient l'uid de l'utilisateur -- même règle
+//   "aucune donnée identifiante" que buildIssueBody) ni les noms internes
+//   (bucket, colonne) n'y figurent.
 //
 // Réponses :
 //   200 { id, status: "synced"|"failed", github_issue_url? }
@@ -21,9 +58,11 @@
 //     ci-dessous : c'est le point de conception le plus important de cette
 //     fonction.
 //   400 { error: "invalid_body", message }
+//   400 { error: "screenshot_not_found", message }    (screenshotPath absent du bucket)
 //   401 { error: "unauthorized"|..., message }        (authenticateRequest)
 //   405 { error: "method_not_allowed" }
-//   500 { error: "internal_error", message }           (l'INSERT lui-même a échoué)
+//   500 { error: "internal_error", message }           (l'INSERT lui-même, ou la
+//                                                       vérification Storage, a échoué)
 //   500 { error: "server_misconfigured" }               (env Supabase manquantes)
 //
 // Étapes :
@@ -31,7 +70,9 @@
 //   2. Valide le corps (title/description/severity non vides, severity dans
 //      l'enum, characterId bien un uuid si fourni -- pas de vérification
 //      d'appartenance : c'est un contexte informatif, pas une donnée
-//      sensible modifiée).
+//      sensible modifiée ; screenshotPath au format "<uid appelant>/<fichier>"
+//      si fourni, puis existence de l'objet dans le bucket vérifiée avec le
+//      client service_role -- le client n'a pas de droit de lecture).
 //   3. INSERT dans bug_reports via le client scoped-utilisateur (respecte la
 //      policy RLS INSERT -- reporter_id = auth.uid() -- voir
 //      20260903100000_create_bug_reports.sql), status='pending' par défaut.
@@ -60,21 +101,16 @@ import {
   jsonResponse,
   readEnvConfig,
 } from "../_shared/http.ts";
-
-const SEVERITIES = ["mineur", "majeur", "bloquant"] as const;
-type Severity = (typeof SEVERITIES)[number];
-
-// Convention de labels GitHub pour ce dépôt (documentée ici faute d'autre
-// endroit établi -- première intégration GitHub Issues du projet) :
-// "bug-report" systématique + un label de priorité dérivé de severity. Ces
-// labels doivent exister sur Matth-Ben/nexus-jdr-app-mobile (créés
-// manuellement ou au premier usage selon la configuration du dépôt -- l'API
-// Issues de GitHub crée les labels inconnus automatiquement par défaut).
-const PRIORITY_LABEL: Record<Severity, string> = {
-  mineur: "priority: low",
-  majeur: "priority: medium",
-  bloquant: "priority: high",
-};
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import {
+  buildIssueBody,
+  issueLabels,
+  parseScreenshotPath,
+  SCREENSHOT_BUCKET,
+  type Severity,
+  SEVERITIES,
+  type SyncInput,
+} from "./issue.ts";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -88,6 +124,7 @@ interface ReportBugRequestBody {
   appVersion?: unknown;
   platform?: unknown;
   characterId?: unknown;
+  screenshotPath?: unknown;
 }
 
 Deno.serve(async (req: Request) => {
@@ -141,7 +178,7 @@ Deno.serve(async (req: Request) => {
       {
         error: "invalid_body",
         message:
-          "Les champs title, description et severity (mineur/majeur/bloquant) sont requis.",
+          "Les champs title, description et severity (mineur/majeur/bloquant/contenu) sont requis.",
       },
       400,
     );
@@ -152,6 +189,33 @@ Deno.serve(async (req: Request) => {
       { error: "invalid_body", message: "characterId doit être un uuid valide." },
       400,
     );
+  }
+
+  const screenshot = parseScreenshotPath(body.screenshotPath, user.id);
+  if (!screenshot.ok) {
+    return jsonResponse({ error: "invalid_body", message: screenshot.message }, 400);
+  }
+  const screenshotPath = screenshot.path;
+
+  const admin = createAdminClient(config);
+
+  if (screenshotPath) {
+    const exists = await screenshotExists(admin, screenshotPath);
+    if (exists === "error") {
+      return jsonResponse(
+        { error: "internal_error", message: "Erreur serveur." },
+        500,
+      );
+    }
+    if (!exists) {
+      return jsonResponse(
+        {
+          error: "screenshot_not_found",
+          message: "Aucune capture d'écran trouvée à ce chemin dans le bucket.",
+        },
+        400,
+      );
+    }
   }
 
   // Étape 3 : INSERT via le client scoped-utilisateur (JWT transmis), pour
@@ -169,6 +233,7 @@ Deno.serve(async (req: Request) => {
       app_version: appVersion,
       platform,
       character_id: characterId,
+      screenshot_path: screenshotPath,
     })
     .select("id, created_at")
     .single();
@@ -185,13 +250,13 @@ Deno.serve(async (req: Request) => {
   // réponse à l'app mobile sera 200 quoi qu'il arrive dans la suite. Tout ce
   // qui suit est "best effort" et ne doit plus jamais faire échouer la
   // réponse HTTP.
-  const admin = createAdminClient(config);
   const syncResult = await syncToGithub(bugReport.id, {
     title,
     description,
     severity,
     appVersion,
     platform,
+    hasScreenshot: screenshotPath !== null,
   });
 
   if (syncResult.ok) {
@@ -233,12 +298,23 @@ Deno.serve(async (req: Request) => {
   return jsonResponse({ id: bugReport.id, status: "failed" });
 });
 
-interface SyncInput {
-  title: string;
-  description: string;
-  severity: Severity;
-  appVersion: string | null;
-  platform: string | null;
+/** Vérifie, avec le client service_role (le client n'a aucune policy
+ * SELECT sur ce bucket), que l'objet existe, via un appel direct
+ * `exists(path)` (HEAD sur l'objet). Contrat de storage-js : data=true si
+ * l'objet existe, data=false (avec error) sur 400/404, exception pour toute
+ * autre erreur. "error" dans ce dernier cas, pour ne pas confondre une panne
+ * Storage avec un chemin inexistant. */
+async function screenshotExists(
+  admin: SupabaseClient,
+  path: string,
+): Promise<boolean | "error"> {
+  try {
+    const { data } = await admin.storage.from(SCREENSHOT_BUCKET).exists(path);
+    return data === true;
+  } catch (err) {
+    console.error("report-bug: erreur de vérification Storage", err);
+    return "error";
+  }
 }
 
 type SyncResult =
@@ -266,7 +342,7 @@ async function syncToGithub(
   const body = {
     title: input.title,
     body: buildIssueBody(bugReportId, input),
-    labels: ["bug-report", PRIORITY_LABEL[input.severity]],
+    labels: issueLabels(input.severity),
   };
 
   try {
@@ -305,21 +381,4 @@ async function syncToGithub(
       errorMessage: `Erreur réseau lors de l'appel GitHub: ${String(err)}`,
     };
   }
-}
-
-function buildIssueBody(bugReportId: string, input: SyncInput): string {
-  const lines = [
-    input.description,
-    "",
-    "---",
-    `**Sévérité :** ${input.severity}`,
-    `**Version de l'app :** ${input.appVersion ?? "non renseignée"}`,
-    `**Plateforme :** ${input.platform ?? "non renseignée"}`,
-  ];
-  // Aucune donnée identifiante (e-mail, reporter_id, character_id) : le dépôt
-  // cible est PUBLIC. Ces informations restent dans bug_reports, retrouvable
-  // via l'identifiant ci-dessous (voir la politique de confidentialité,
-  // apps/web/app/confidentialite).
-  lines.push(`**Signalement (bug_reports.id) :** ${bugReportId}`);
-  return lines.join("\n");
 }

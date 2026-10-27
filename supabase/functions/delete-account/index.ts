@@ -51,6 +51,12 @@
 //      est journalisée puis ignorée : des fichiers orphelins dans le bucket
 //      ne sont pas idéaux mais ne doivent JAMAIS empêcher la suppression du
 //      compte (priorité RGPD/utilisateur), qui est l'étape suivante.
+//      Même nettoyage, même préfixe `{userId}/`, dans le bucket privé
+//      `bug-report-screenshots` (captures d'écran jointes aux signalements
+//      de bug, voir 20261027090000_bug_reports_content_severity_and_screenshot.sql) :
+//      les lignes bug_reports partent en cascade avec le compte, les fichiers
+//      Storage non (aucune FK), d'où ce nettoyage explicite promis par la
+//      politique de confidentialité.
 //   3. supabase.auth.admin.deleteUser(userId) via le client service_role.
 //      Cascade automatiquement en base vers toutes les tables qui
 //      référencent auth.users(id) en `on delete cascade`, notamment
@@ -72,6 +78,10 @@ import {
 } from "../_shared/http.ts";
 
 const PORTRAITS_BUCKET = "character-portraits";
+const BUG_REPORT_SCREENSHOTS_BUCKET = "bug-report-screenshots";
+// Buckets nettoyés sous `{userId}/` avant la suppression du compte, dans cet
+// ordre ; chacun indépendamment (l'échec de l'un n'empêche pas l'autre).
+const USER_FILE_BUCKETS = [PORTRAITS_BUCKET, BUG_REPORT_SCREENSHOTS_BUCKET] as const;
 // Storage.list() pagine par défaut à 100 ; on force une limite haute pour
 // limiter le nombre d'aller-retours -- best-effort, pas critique si un
 // dossier dépasse cette taille (cas non réaliste ici : un seul utilisateur).
@@ -102,9 +112,11 @@ Deno.serve(async (req: Request) => {
 
   const admin = createAdminClient(config);
 
-  // Étape 2 : nettoyage best-effort du bucket. Ne fait jamais échouer la
+  // Étape 2 : nettoyage best-effort des buckets. Ne fait jamais échouer la
   // requête -- voir le commentaire d'en-tête.
-  await deletePortraitFiles(admin, user.id);
+  for (const bucket of USER_FILE_BUCKETS) {
+    await deleteUserFiles(admin, bucket, user.id);
+  }
 
   // Étape 3 : suppression du compte lui-même, l'action prioritaire.
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
@@ -123,45 +135,56 @@ Deno.serve(async (req: Request) => {
   return jsonResponse({ deleted: true });
 });
 
-async function deletePortraitFiles(admin: SupabaseClient, userId: string): Promise<void> {
+async function deleteUserFiles(
+  admin: SupabaseClient,
+  bucket: string,
+  userId: string,
+): Promise<void> {
   try {
-    const filePaths = await listAllFilePaths(admin, userId);
+    const filePaths = await listAllFilePaths(admin, bucket, userId);
     if (filePaths.length === 0) return;
 
     for (let i = 0; i < filePaths.length; i += REMOVE_CHUNK_SIZE) {
       const chunk = filePaths.slice(i, i + REMOVE_CHUNK_SIZE);
-      const { error } = await admin.storage.from(PORTRAITS_BUCKET).remove(chunk);
+      const { error } = await admin.storage.from(bucket).remove(chunk);
       if (error) {
         console.error(
-          `delete-account: échec suppression storage (${chunk.length} fichier(s))`,
+          `delete-account: échec suppression storage (bucket=${bucket}, dossier=${userId}/, ${chunk.length} fichier(s)) -- purge manuelle à faire sous ce préfixe`,
           error,
         );
         // best-effort : on continue avec les lots suivants malgré l'échec.
       }
     }
   } catch (err) {
-    console.error("delete-account: erreur inattendue lors du nettoyage storage", err);
+    console.error(
+      `delete-account: erreur inattendue lors du nettoyage storage (bucket=${bucket}, dossier=${userId}/) -- purge manuelle à faire sous ce préfixe`,
+      err,
+    );
   }
 }
 
 /** Liste récursivement tous les chemins de fichiers sous `{userId}/` dans le
- * bucket `character-portraits`. Storage.list() ne renvoie que le niveau
+ * bucket `bucket`. Storage.list() ne renvoie que le niveau
  * demandé (les sous-dossiers apparaissent comme des entrées sans `id`), d'où
  * le parcours en largeur ci-dessous. Best-effort : une erreur de list() sur
  * un sous-dossier est journalisée puis ignorée (on garde ce qu'on a pu
  * collecter ailleurs) plutôt que de faire échouer tout le nettoyage. */
-async function listAllFilePaths(admin: SupabaseClient, userId: string): Promise<string[]> {
+async function listAllFilePaths(
+  admin: SupabaseClient,
+  bucket: string,
+  userId: string,
+): Promise<string[]> {
   const filePaths: string[] = [];
   const foldersToVisit: string[] = [userId];
 
   while (foldersToVisit.length > 0) {
     const folder = foldersToVisit.shift()!;
     const { data: entries, error } = await admin.storage
-      .from(PORTRAITS_BUCKET)
+      .from(bucket)
       .list(folder, { limit: LIST_LIMIT });
 
     if (error) {
-      console.error(`delete-account: échec list() sur "${folder}"`, error);
+      console.error(`delete-account: échec list() sur "${bucket}/${folder}"`, error);
       continue;
     }
 

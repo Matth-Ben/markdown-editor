@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "Quelles données Nexus JDR collecte, pourquoi, avec qui elles sont partagées et comment exercer tes droits.",
 };
 
-const LAST_UPDATED = "25 septembre 2026";
+const LAST_UPDATED = "27 octobre 2026";
 const CONTACT_EMAIL = "support@nexus-jdr.app";
 
 type Section = { id: string; title: string; body: React.ReactNode };
@@ -83,7 +83,9 @@ const sections: Section[] = [
         <li>
           <strong>Signalements de bug</strong> : titre, description et gravité
           que tu saisis, version de l’app, plateforme et, si tu le choisis, le
-          personnage concerné.
+          personnage concerné ainsi qu’une capture d’écran. Cette capture est
+          stockée de façon privée : elle n’est visible que par nous et conservée
+          jusqu’à la suppression de ton compte.
         </li>
       </ul>
     ),
@@ -144,7 +146,8 @@ const sections: Section[] = [
         <ul>
           <li>
             <strong>Supabase</strong> — hébergement de la base de données, de
-            l’authentification et des photos.
+            l’authentification, des photos et des captures d’écran jointes aux
+            signalements.
           </li>
           <li>
             <strong>Google Firebase</strong> — envoi des notifications (Firebase
@@ -158,7 +161,9 @@ const sections: Section[] = [
             <strong>GitHub</strong> — suivi des bugs signalés : le contenu d’un
             signalement (titre, description, gravité, version, plateforme) est
             publié comme ticket dans un dépôt public, sans ton adresse e-mail ni
-            ton nom. N’y indique donc aucune information personnelle.
+            ton nom. La capture d’écran éventuelle n’y est jamais publiée ; elle
+            reste stockée de façon privée chez Supabase. N’indique donc aucune
+            information personnelle dans le titre ou la description.
           </li>
           <li>
             <strong>Vercel</strong> — hébergement du site nexus-jdr.app.
@@ -187,7 +192,12 @@ const sections: Section[] = [
           lien avec ton compte, pendant la durée de conservation paramétrée dans
           les outils de mesure.
         </li>
-        <li>Signalements de bug : le temps nécessaire à leur traitement.</li>
+        <li>
+          Signalements de bug : le temps nécessaire à leur traitement. Les
+          captures d’écran jointes sont conservées tant que ton compte existe,
+          même une fois le bug corrigé, et supprimées définitivement avec ton
+          compte.
+        </li>
       </ul>
     ),
   },
