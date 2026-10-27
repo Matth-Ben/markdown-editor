@@ -44,10 +44,11 @@
 //   screenshot_not_found) un chemin bien formé dont l'objet n'existe pas
 //   dans le bucket. Le chemin est enregistré dans
 //   bug_reports.screenshot_path. L'issue GitHub (dépôt PUBLIC) ne contient
-//   ni l'image ni aucun lien, même signé : seulement une mention textuelle
-//   renvoyant au bucket et à bug_reports.screenshot_path (le chemin brut
-//   n'y figure pas non plus, car il contient l'uid de l'utilisateur -- même
-//   règle "aucune donnée identifiante" que buildIssueBody).
+//   ni l'image ni aucun lien, même signé : seulement la mention « Capture
+//   d'écran : jointe (consultable côté Supabase via l'id du signalement) ».
+//   Ni le chemin brut (il contient l'uid de l'utilisateur -- même règle
+//   "aucune donnée identifiante" que buildIssueBody) ni les noms internes
+//   (bucket, colonne) n'y figurent.
 //
 // Réponses :
 //   200 { id, status: "synced"|"failed", github_issue_url? }
@@ -298,25 +299,22 @@ Deno.serve(async (req: Request) => {
 });
 
 /** Vérifie, avec le client service_role (le client n'a aucune policy
- * SELECT sur ce bucket), que l'objet existe. "error" si Storage répond en
- * erreur, pour ne pas confondre une panne avec un chemin inexistant. */
+ * SELECT sur ce bucket), que l'objet existe, via un appel direct
+ * `exists(path)` (HEAD sur l'objet). Contrat de storage-js : data=true si
+ * l'objet existe, data=false (avec error) sur 400/404, exception pour toute
+ * autre erreur. "error" dans ce dernier cas, pour ne pas confondre une panne
+ * Storage avec un chemin inexistant. */
 async function screenshotExists(
   admin: SupabaseClient,
   path: string,
 ): Promise<boolean | "error"> {
-  const slash = path.indexOf("/");
-  const folder = path.slice(0, slash);
-  const fileName = path.slice(slash + 1);
-  const { data, error } = await admin.storage
-    .from(SCREENSHOT_BUCKET)
-    .list(folder, { search: fileName, limit: 100 });
-  if (error) {
-    console.error("report-bug: erreur de vérification Storage", error);
+  try {
+    const { data } = await admin.storage.from(SCREENSHOT_BUCKET).exists(path);
+    return data === true;
+  } catch (err) {
+    console.error("report-bug: erreur de vérification Storage", err);
     return "error";
   }
-  // `search` est une recherche par préfixe : on exige une correspondance
-  // exacte sur le nom.
-  return (data ?? []).some((entry) => entry.name === fileName);
 }
 
 type SyncResult =

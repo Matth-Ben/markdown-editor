@@ -63,7 +63,7 @@ Deno.test("parseScreenshotPath — refuse tout chemin hors du dossier de l'appel
   }
 });
 
-Deno.test("buildIssueBody — mention textuelle de la capture, sans URL ni chemin ni uid", () => {
+Deno.test("buildIssueBody — mention textuelle de la capture, sans URL, chemin, uid ni nom interne", () => {
   const body = buildIssueBody("11111111-2222-4333-8444-555555555555", {
     title: "t",
     description: "Le sort Boule de feu a une portée erronée.",
@@ -72,9 +72,11 @@ Deno.test("buildIssueBody — mention textuelle de la capture, sans URL ni chemi
     platform: "android",
     hasScreenshot: true,
   });
-  assert(body.includes("**Capture d'écran :** jointe"));
-  assert(body.includes(SCREENSHOT_BUCKET));
-  assert(body.includes("bug_reports.screenshot_path"));
+  assert(
+    body.includes("**Capture d'écran :** jointe (consultable côté Supabase via l'id du signalement)"),
+  );
+  assertFalse(body.includes(SCREENSHOT_BUCKET), "aucun nom de bucket dans l'issue publique");
+  assertFalse(body.includes("screenshot_path"), "aucun nom de colonne dans l'issue publique");
   assert(body.includes("**Sévérité :** contenu"));
   assertFalse(/https?:\/\//.test(body), "aucune URL dans le corps de l'issue");
   assertFalse(body.includes(UID), "aucun uid dans le corps de l'issue");

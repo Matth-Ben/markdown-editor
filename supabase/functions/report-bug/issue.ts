@@ -91,10 +91,11 @@ export function buildIssueBody(bugReportId: string, input: SyncInput): string {
   // apps/web/app/confidentialite).
   if (input.hasScreenshot) {
     // Ni image, ni URL (même signée), ni chemin brut (il commence par l'uid
-    // de l'utilisateur) : dépôt PUBLIC. Le chemin se retrouve en base via
-    // l'identifiant du signalement ci-dessous.
+    // de l'utilisateur), ni nom interne (bucket, colonne) : dépôt PUBLIC. La
+    // capture se retrouve côté Supabase via l'identifiant du signalement
+    // ci-dessous (bug_reports.screenshot_path, bucket SCREENSHOT_BUCKET).
     lines.push(
-      `**Capture d'écran :** jointe (consultable dans Supabase Storage, bucket \`${SCREENSHOT_BUCKET}\`, chemin indiqué dans \`bug_reports.screenshot_path\` pour ce signalement)`,
+      "**Capture d'écran :** jointe (consultable côté Supabase via l'id du signalement)",
     );
   }
   lines.push(`**Signalement (bug_reports.id) :** ${bugReportId}`);
