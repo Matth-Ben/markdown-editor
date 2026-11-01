@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "Quelles données Nexus JDR collecte, pourquoi, avec qui elles sont partagées et comment exercer tes droits.",
 };
 
-const LAST_UPDATED = "27 octobre 2026";
+const LAST_UPDATED = "1er novembre 2026";
 const CONTACT_EMAIL = "support@nexus-jdr.app";
 
 type Section = { id: string; title: string; body: React.ReactNode };
@@ -154,6 +154,14 @@ const sections: Section[] = [
             Cloud Messaging) et statistiques d’utilisation (Firebase Analytics).
           </li>
           <li>
+            <strong>Google Firebase Crashlytics</strong> — collecte automatique
+            de rapports de plantage (traces de pile, informations sur
+            l’appareil) pour maintenir la stabilité de l’app. Contrairement aux
+            statistiques d’utilisation (ci-dessus), ce recueil est toujours
+            actif et ne peut pas être désactivé depuis l’app : il relève de
+            notre intérêt légitime à diagnostiquer et corriger les plantages.
+          </li>
+          <li>
             <strong>PostHog</strong> (hébergement dans l’Union européenne) —
             statistiques d’utilisation.
           </li>
@@ -164,6 +172,10 @@ const sections: Section[] = [
             ton nom. La capture d’écran éventuelle n’y est jamais publiée ; elle
             reste stockée de façon privée chez Supabase. N’indique donc aucune
             information personnelle dans le titre ou la description.
+          </li>
+          <li>
+            <strong>Resend</strong> — envoi des e-mails transactionnels
+            (confirmation de compte, réinitialisation de mot de passe).
           </li>
           <li>
             <strong>Vercel</strong> — hébergement du site nexus-jdr.app.
@@ -215,6 +227,12 @@ const sections: Section[] = [
           <li>
             <strong>Exporter tes données</strong> :{" "}
             <em>Profil › Confidentialité et données › Exporter mes données</em>.
+            L’export contient ton profil (pseudo, avatar, e-mail), tes
+            personnages (caractéristiques, inventaire, sorts, historique), tes
+            groupes rejoints et tes notes personnelles de groupe, au format
+            JSON proposé au partage depuis ton appareil. Les signalements de
+            bug n’y figurent pas : ils restent consultables directement sur
+            GitHub (voir « Avec qui tes données sont partagées »).
           </li>
           <li>
             <strong>Supprimer ton compte et toutes tes données</strong> :{" "}
