@@ -1,0 +1,48 @@
+-- Corrige un bug signalé côté app mobile "Personnages" : dans l'écran
+-- "Groupe" (onglet Membres), les PV (et autres champs) des personnages des
+-- coéquipiers ne se mettaient jamais à jour en temps réel.
+--
+-- Diagnostic confirmé : la chaîne applicative mobile (abonnement
+-- `channel.onPostgresChanges` sur `characters` filtré par `id`, voir
+-- `lib/features/groups/data/group_repository.dart::subscribeToMemberUpdates`
+-- dans nexus-jdr-app-mobile) est correcte et complète, mais `select
+-- schemaname, tablename from pg_publication_tables where pubname =
+-- 'supabase_realtime'` est vide côté projet distant : aucune table n'est
+-- publiée pour Realtime. PostgreSQL ne notifie donc jamais le serveur
+-- Realtime, quel que soit le code client.
+--
+-- Aucune migration précédente n'a configuré `supabase_realtime` (recherche
+-- faite sur tout `supabase/migrations/` : pas d'occurrence de
+-- `supabase_realtime`/`add publication`/`REPLICA IDENTITY` avant celle-ci) —
+-- ce n'est pas une régression, c'est une étape manquante depuis la création
+-- de la fonctionnalité "Groupe".
+--
+-- REPLICA IDENTITY : conservée au défaut Postgres (DEFAULT, basée sur la clé
+-- primaire `id`, voir 20260825090400_create_character_tables.sql). Le filtre
+-- client (`PostgresChangeFilter(column: 'id', ...)`) porte justement sur la
+-- clé primaire, donc REPLICA IDENTITY FULL n'apporte rien ici.
+--
+-- Sécurité : Supabase Realtime réévalue les policies RLS SELECT de
+-- l'utilisateur abonné avant de délivrer un évènement postgres_changes. Sur
+-- `characters`, ces policies sont déjà :
+--   - "Owner can select their characters" (auth.uid() = owner_id) ;
+--   - "Group member can select teammates' characters" (via
+--     group_member_can_read_character), délibérément documentée dans
+--     20260906190500_group_member_can_read_characters.sql comme donnant un
+--     accès à la ligne complète pour permettre justement ce Realtime, la
+--     restriction au sous-ensemble de champs affichés (PV, statut...) étant
+--     appliquée côté client mobile.
+-- Publier `characters` sur `supabase_realtime` ne fait donc qu'activer la
+-- diffusion déjà prévue par ces policies ; cela n'élargit aucun accès en
+-- lecture au-delà de ce qu'un `select` direct permettait déjà.
+--
+-- Périmètre volontairement limité à `characters` : c'est la seule table
+-- avec un point d'abonnement Realtime dans le code mobile actuel (recherche
+-- faite sur tout nexus-jdr-app-mobile/lib : un seul `channel(...)
+-- .onPostgresChanges(...)`, dans group_repository.dart, ciblant
+-- `characters`). `group_members`, `group_notes` et `group_treasure` n'ont
+-- aujourd'hui aucun abonnement Realtime côté client (rafraîchissement
+-- manuel/pull-to-refresh) : les ajouter à la publication serait hors
+-- périmètre de ce correctif et devra être une décision produit séparée si
+-- un besoin de mise à jour en temps réel y apparaît.
+alter publication supabase_realtime add table public.characters;
