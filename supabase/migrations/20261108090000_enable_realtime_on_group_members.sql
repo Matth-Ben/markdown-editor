@@ -1,0 +1,64 @@
+-- Corrige un bug signalé côté app mobile "Personnages" (chantier "simulation
+-- utilisateur", fiche F07 de docs/retours-utilisateurs.md dans
+-- nexus-jdr-app-mobile) : dans l'écran "Groupe", un MJ déjà sur l'écran ne
+-- voit jamais apparaître un nouveau membre qui vient de rejoindre le
+-- groupe -- il faut quitter l'écran et y revenir (ou pull-to-refresh) pour
+-- que la liste se mette à jour. Seules les mises à jour de PV d'un membre
+-- DÉJÀ connu arrivent en temps réel, grâce à la publication Realtime sur
+-- `characters` (20261107090000_enable_realtime_on_characters.sql).
+--
+-- Diagnostic confirmé côté client (`groupMembersRealtimeWatcherProvider`,
+-- nexus-jdr-app-mobile) : il n'existe aujourd'hui aucun canal Realtime
+-- souscrit sur `group_members` elle-même -- seul `characters` en a un
+-- (`group_repository.dart::subscribeToMemberUpdates`). Un nouveau membre se
+-- traduit par un INSERT sur `group_members`, jamais sur `characters`, donc
+-- même un abonnement `characters` parfaitement fonctionnel ne peut pas
+-- notifier cet évènement. Même cause structurelle que
+-- 20261107090000_enable_realtime_on_characters.sql : `select schemaname,
+-- tablename from pg_publication_tables where pubname = 'supabase_realtime'`
+-- ne liste pas `group_members` -- PostgreSQL ne notifie donc jamais le
+-- serveur Realtime pour cette table, quel que soit le code client.
+--
+-- Ce correctif-ci est volontairement limité à la base : il rend
+-- `group_members` disponible pour Realtime. Il ne produit un effet observable
+-- qu'une fois complété par le correctif client correspondant (souscription
+-- Realtime sur `group_members` + invalidation de `groupDetailProvider`),
+-- développé en parallèle sur le dépôt mobile -- voir la description de la
+-- pull request. Les deux doivent être déployés/mergés ensemble.
+--
+-- REPLICA IDENTITY : conservée au défaut Postgres (DEFAULT, basée sur la clé
+-- primaire `id`, voir 20261016090000_group_members_orphan_character.sql qui
+-- a remplacé l'ancienne PK composite (group_id, character_id) par cette
+-- colonne `id` de substitution). Le futur abonnement client n'a besoin que
+-- de savoir qu'une ligne a été ajoutée/modifiée dans un groupe donné
+-- (filtre naturel sur `group_id`), pas de diffuser l'ancienne valeur d'une
+-- colonne modifiée -- REPLICA IDENTITY FULL n'apporte donc rien ici, même
+-- raisonnement que pour `characters`.
+--
+-- Sécurité : Supabase Realtime réévalue les policies RLS SELECT de
+-- l'utilisateur abonné avant de délivrer un évènement postgres_changes.
+-- Sur `group_members`, la seule policy SELECT est "Member can select
+-- members of their groups" (`using (public.is_group_member(group_id))`,
+-- 20260906182601_create_groups.sql), inchangée depuis -- vérifié ici en
+-- relisant toutes les migrations qui touchent `group_members`
+-- (20260906190000, 20260906190500, 20260927100000, 20261013100000,
+-- 20261016090000, 20261106090000, 20261106100000) : aucune n'ajoute ni ne
+-- modifie de policy SELECT sur cette table. Cette policy donne déjà accès à
+-- TOUTES les lignes `group_members` d'un groupe (membre courant comme
+-- futurs membres) à TOUT membre de ce groupe, pas seulement à sa propre
+-- ligne -- documenté explicitement comme tel dans le commentaire de
+-- 20261106100000_create_group_character_status_overview.sql ("group_members
+-- expose déjà, à TOUT membre d'un groupe, TOUTES les lignes group_members de
+-- ce groupe"). Publier `group_members` sur `supabase_realtime` ne fait donc
+-- qu'activer la diffusion déjà couverte par cette policy ; cela n'élargit
+-- aucun accès en lecture au-delà de ce qu'un `select` direct sur cette table
+-- permet déjà -- même raisonnement que pour `characters`.
+--
+-- Périmètre volontairement limité à `group_members` : `group_notes` et
+-- `group_treasure` n'ont aujourd'hui aucun abonnement Realtime côté client
+-- (rafraîchissement manuel/pull-to-refresh) ; les ajouter à la publication
+-- serait hors périmètre de ce correctif et devra être une décision produit
+-- séparée si un besoin de mise à jour en temps réel y apparaît, même
+-- réserve que celle déjà posée dans
+-- 20261107090000_enable_realtime_on_characters.sql.
+alter publication supabase_realtime add table public.group_members;
