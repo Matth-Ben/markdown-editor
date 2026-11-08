@@ -27,7 +27,7 @@
 -- pull request. Les deux doivent être déployés/mergés ensemble.
 --
 -- REPLICA IDENTITY : conservée au défaut Postgres (DEFAULT, basée sur la clé
--- primaire `id`, voir 20261016090000_group_members_orphan_character.sql qui
+-- primaire `id`, voir 20261013100000_group_member_without_character.sql qui
 -- a remplacé l'ancienne PK composite (group_id, character_id) par cette
 -- colonne `id` de substitution). Le futur abonnement client n'a besoin que
 -- de savoir qu'une ligne a été ajoutée/modifiée dans un groupe donné
