@@ -28,7 +28,7 @@
 -- dernière définition) avec la seule clé 'conditions' ajoutée dans le bloc
 -- 'character', juste après 'armor_class_bonus'. get_shared_character et
 -- get_group_member_character héritent de l'ajout. Changement purement
--- additif. Ne touche pas à codex_entries.
+-- additif.
 --
 -- Retour arrière : rejouer le bloc `create or replace function
 -- public.build_character_sheet_json` de 20261025100000, puis
