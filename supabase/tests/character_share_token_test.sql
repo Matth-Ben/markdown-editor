@@ -23,6 +23,9 @@
 -- `permission denied for table characters` qui avortait la transaction et
 -- empêchait les 7 derniers tests de s'exécuter. Les deux corrigés ci-dessous.
 --
+-- Étendu par 20261110090000_add_characters_conditions.sql (colonne
+-- `conditions`) : voir le bloc "Test conditions" plus bas.
+--
 -- Lancer : node_modules/.bin/supabase test db supabase/tests --local
 -- (depuis la racine du dépôt web, stack local démarré au préalable via
 -- `supabase start`). BEGIN/ROLLBACK en fin de fichier : aucune donnée de
@@ -31,7 +34,7 @@
 
 begin;
 
-select plan(14);
+select plan(18);
 
 -- Fixtures : deux joueurs, chacun propriétaire d'un personnage, plus un MJ
 -- propriétaire d'une histoire à laquelle le premier personnage est rattaché
@@ -268,6 +271,45 @@ select ok(
   'get_shared_character n''expose jamais character_campaigns/stories (l''histoire rattachée reste invisible via ce token)'
 );
 reset role;
+
+-- Test conditions (20261110090000) : la clé `conditions` figure dans le bloc
+-- 'character' du JSON partagé (build_character_sheet_json, via
+-- get_shared_character), vaut `[]` par défaut, reflète une valeur posée telle
+-- quelle, et la contrainte characters_conditions_is_array refuse tout ce qui
+-- n'est pas un tableau JSON. Les écritures se font en tant que `postgres`
+-- (la contrainte CHECK s'applique quel que soit le rôle).
+set local role anon;
+select is(
+  public.get_shared_character(current_setting('pgtap.current_share_token'))->'character'->'conditions',
+  '[]'::jsonb,
+  'get_shared_character expose conditions = [] par défaut'
+);
+reset role;
+
+update public.characters
+set conditions = '["poisoned","prone"]'::jsonb
+where id = 'cccccccc-0000-0000-0000-000000000001';
+
+set local role anon;
+select is(
+  public.get_shared_character(current_setting('pgtap.current_share_token'))->'character'->'conditions',
+  '["poisoned","prone"]'::jsonb,
+  'get_shared_character expose conditions tel que posé (["poisoned","prone"])'
+);
+reset role;
+
+select throws_ok(
+  $$ update public.characters set conditions = '{}'::jsonb where id = 'cccccccc-0000-0000-0000-000000000001' $$,
+  '23514',
+  null,
+  'characters_conditions_is_array refuse un objet JSON'
+);
+select throws_ok(
+  $$ update public.characters set conditions = '"x"'::jsonb where id = 'cccccccc-0000-0000-0000-000000000001' $$,
+  '23514',
+  null,
+  'characters_conditions_is_array refuse une chaîne JSON'
+);
 
 -- Test 7 : désactivation -- une fois share_token repassé à NULL par le
 -- propriétaire (via la policy UPDATE existante, pas une fonction dédiée),
