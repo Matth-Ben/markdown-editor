@@ -273,9 +273,10 @@ begin
   -- Course départ / création de ligne PJ : set_my_initiative tient un verrou
   -- FOR UPDATE sur le combat. Prendre le même verrou ici sérialise les deux :
   -- soit la ligne PJ créée est vue (UPDATE en READ COMMITTED) puis retirée, soit
-  -- set_my_initiative revoit l'appartenance après commit et refuse. Pas de risque
-  -- de deadlock : set_my_initiative ne prend aucun verrou sur group_members avant
-  -- d'avoir le verrou du combat, et ce trigger ne verrouille que des combats.
+  -- set_my_initiative revoit l'appartenance après commit et refuse. Deadlock
+  -- possible seulement contre une suppression concurrente de l'utilisateur, du
+  -- personnage ou du groupe ; PostgreSQL le détecte (40P01) et la transaction
+  -- est rejouable.
   perform 1 from public.combats c
    where c.group_id = old.group_id and c.status = 'active'
    for update;

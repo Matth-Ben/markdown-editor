@@ -14,7 +14,7 @@
 
 begin;
 
-select plan(113);
+select plan(118);
 
 -- Fixtures (insérées en tant que postgres, qui contourne RLS) --------------------
 -- c...01 : MJ (propriétaire de A, MJ sans personnage)   c...02 : joueur 1
@@ -605,6 +605,27 @@ select throws_ok(
 select is((select name from public.remove_participant((select id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and name = 'Rat 1'))), 'Rat 1', 'Retrait d''un Rat');
 select is((select name from public.add_npc_participants((select v from ctx where k = 'cc'), 'Rat', 1, 1)), 'Rat', 'Un PNJ retiré libère une place sous la limite de 60');
 reset role;
+-- Numérotation après retrait : les noms retirés restent comptés (pas de doublon).
+update public.combat_participants set status = 'removed'
+ where combat_id = (select v from ctx where k = 'cc') and name in ('Rat 10', 'Rat 11', 'Rat 12', 'Rat 13', 'Rat 14');
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
+select is(
+  (select string_agg(name, ',' order by sort_order) from public.add_npc_participants((select v from ctx where k = 'cc'), 'Gobelin', 8, 3)),
+  'Gobelin 1,Gobelin 2,Gobelin 3',
+  'Numérotation : premier lot'
+);
+select is(
+  (select status from public.remove_participant((select id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and name = 'Gobelin 3'))),
+  'removed',
+  'Retrait de Gobelin 3'
+);
+select is(
+  (select string_agg(name, ',' order by sort_order) from public.add_npc_participants((select v from ctx where k = 'cc'), 'Gobelin', 8, 2)),
+  'Gobelin 4,Gobelin 5',
+  'Numérotation après retrait : Gobelin 3 reste compté, pas de doublon'
+);
+reset role;
 update public.combats set current_participant_id = (select v from ctx where k = 'm1row') where id = (select v from ctx where k = 'cc');
 delete from public.group_members where group_id = 'd0000000-0000-0000-0000-000000000003' and user_id = 'c0000000-0000-0000-0000-000000000007';
 select is((select status from public.combat_participants where id = (select v from ctx where k = 'm1row')), 'removed', 'Départ du joueur au tour courant : ligne retirée');
@@ -612,7 +633,25 @@ select is((select current_participant_id from public.combats where id = (select 
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
 select is((select status from public.end_combat((select v from ctx where k = 'cc'))), 'ended', 'Fin du combat C');
-select is((select ended_at from public.end_combat((select v from ctx where k = 'cc'))) = (select ended_at from public.combats where id = (select v from ctx where k = 'cc')), true, 'end_combat idempotent : ended_at inchangé');
+reset role;
+-- Idempotence : on antidate ended_at (superuser) pour que now() ne masque pas une réécriture.
+update public.combats set ended_at = now() - interval '1 hour' where id = (select v from ctx where k = 'cc');
+create temp table ended_before as select ended_at from public.combats where id = (select v from ctx where k = 'cc');
+grant all on ended_before to public;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
+select is((select ended_at from public.end_combat((select v from ctx where k = 'cc'))), (select ended_at from ended_before), 'end_combat idempotent : renvoie exactement l''ended_at antidaté');
+reset role;
+select is((select ended_at from public.combats where id = (select v from ctx where k = 'cc')), (select ended_at from ended_before), 'end_combat idempotent : la table n''est pas modifiée');
+-- MJ absent + combat terminé : l'état du combat prime sur gm_absent.
+delete from public.group_members where group_id = 'd0000000-0000-0000-0000-000000000003' and user_id = 'c0000000-0000-0000-0000-000000000006';
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000009', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ select public.set_my_initiative((select v from ctx where k = 'cc'), 3) $$,
+  'P0001', 'combat_not_active',
+  'MJ absent + combat terminé : combat_not_active (statut avant gm_absent)'
+);
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000009', 'role', 'authenticated')::text, true);
