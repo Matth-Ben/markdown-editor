@@ -8,7 +8,9 @@
 --   not_authenticated        28000  pas de session
 --   group_not_found          P0002  groupe inconnu OU appelant ni membre ni MJ
 --   combat_not_found         P0002  combat inconnu OU appelant ni membre ni MJ
---   participant_not_found    P0002  participant inexistant (un appelant non membre reçoit combat_not_found)
+--   participant_not_found    P0002  disparu entre la lecture et le verrou (course) ; sinon un participant
+--                                   inconnu ou hors des groupes de l'appelant répond combat_not_found
+--   gm_absent                P0001  set_my_initiative : le MJ n'est plus dans le groupe (lecture seule)
 --   not_group_owner          42501  membre mais pas MJ (action réservée au MJ)
 --   no_game_master           P0001  le groupe n'a pas de MJ dans l'app
 --   combat_already_active    P0001  un combat actif existe déjà pour ce groupe
@@ -19,7 +21,7 @@
 --   invalid_name             22023  nom vide ou trop long
 --   invalid_count            22023  count < 1
 --   npc_limit_per_call       P0001  count > 20
---   npc_limit_per_combat     P0001  plus de 60 PNJ dans le combat (retirés inclus)
+--   npc_limit_per_combat     P0001  plus de 60 PNJ NON retirés dans le combat
 --   invalid_sort_order       22023  position hors 1..nombre de participants
 --
 -- Choix "participant PJ" : une ligne 'pc' est créée (a) au lancement pour chaque
@@ -46,6 +48,8 @@
 --   drop function if exists public.remove_participant(uuid);
 --   drop function if exists public.reorder_participant(uuid, integer);
 --   drop function if exists public.combat_lock_for_gm(uuid, boolean);
+--   drop function if exists public.combat_participant_combat_id(uuid);
+--   (les combats et participants sont supprimés avec les tables, voir 20261114090000)
 
 -- Helper interne : verrouille le combat (FOR UPDATE, sérialise les RPC
 -- concurrentes sur un même combat : numérotation, limites, sort_order) et
@@ -79,6 +83,30 @@ begin
     raise exception 'combat_not_active' using errcode = 'P0001';
   end if;
   return v_combat;
+end;
+$$;
+
+-- Helper interne : combat d'un participant, ou combat_not_found si le
+-- participant est inconnu OU hors des groupes de l'appelant (aucune différence
+-- observable entre les deux cas).
+create or replace function public.combat_participant_combat_id(p_participant_id uuid)
+returns uuid
+language plpgsql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+declare
+  v_combat_id uuid;
+  v_group_id uuid;
+begin
+  select p.combat_id, p.group_id into v_combat_id, v_group_id
+    from public.combat_participants p where p.id = p_participant_id;
+  if not found
+     or not (public.is_group_member(v_group_id) or public.is_group_owner(v_group_id)) then
+    raise exception 'combat_not_found' using errcode = 'P0002';
+  end if;
+  return v_combat_id;
 end;
 $$;
 
@@ -211,6 +239,10 @@ begin
   if v_combat.status <> 'active' then
     raise exception 'combat_not_active' using errcode = 'P0001';
   end if;
+  -- MJ absent : lecture seule pour les joueurs (décision de Matthias).
+  if not public.group_has_gm(v_combat.group_id) then
+    raise exception 'gm_absent' using errcode = 'P0001';
+  end if;
   if p_initiative is null or p_initiative < -20 or p_initiative > 60 then
     raise exception 'invalid_initiative' using errcode = '22023';
   end if;
@@ -275,10 +307,7 @@ begin
     raise exception 'not_authenticated' using errcode = '28000';
   end if;
 
-  select combat_id into v_combat_id from public.combat_participants where id = p_participant_id;
-  if not found then
-    raise exception 'participant_not_found' using errcode = 'P0002';
-  end if;
+  v_combat_id := public.combat_participant_combat_id(p_participant_id);
   perform public.combat_lock_for_gm(v_combat_id, true);
 
   if p_initiative is not null and (p_initiative < -20 or p_initiative > 60) then
@@ -306,7 +335,7 @@ $$;
 -- PV). p_count = 1 : nom tel quel. p_count > 1 : "Gobelin 1", "Gobelin 2"...
 -- en CONTINUANT la numérotation des PNJ déjà présents du même nom de base
 -- (un "Gobelin" seul compte comme n°1). Limites : 20 par appel, 60 PNJ par
--- combat (retirés inclus). p_initiative NULL autorisé (à saisir plus tard).
+-- combat (non retirés ; les retirés ne comptent pas, mais leurs noms restent pris en compte pour la numérotation). p_initiative NULL autorisé (à saisir plus tard).
 create or replace function public.add_npc_participants(
   p_combat_id uuid,
   p_base_name text,
@@ -345,7 +374,7 @@ begin
 
   select count(*) into v_total
     from public.combat_participants
-   where combat_id = p_combat_id and kind = 'npc';
+   where combat_id = p_combat_id and kind = 'npc' and status <> 'removed';
   if v_total + p_count > 60 then
     raise exception 'npc_limit_per_combat' using errcode = 'P0001';
   end if;
@@ -399,10 +428,7 @@ begin
     raise exception 'not_authenticated' using errcode = '28000';
   end if;
 
-  select combat_id into v_combat_id from public.combat_participants where id = p_participant_id;
-  if not found then
-    raise exception 'participant_not_found' using errcode = 'P0002';
-  end if;
+  v_combat_id := public.combat_participant_combat_id(p_participant_id);
   perform public.combat_lock_for_gm(v_combat_id, true);
 
   update public.combat_participants
@@ -437,10 +463,7 @@ begin
     raise exception 'not_authenticated' using errcode = '28000';
   end if;
 
-  select combat_id into v_combat_id from public.combat_participants where id = p_participant_id;
-  if not found then
-    raise exception 'participant_not_found' using errcode = 'P0002';
-  end if;
+  v_combat_id := public.combat_participant_combat_id(p_participant_id);
   perform public.combat_lock_for_gm(v_combat_id, true);
 
   select sort_order into v_old from public.combat_participants where id = p_participant_id;
@@ -469,6 +492,7 @@ $$;
 
 -- Privilèges d'exécution : authenticated uniquement (jamais public/anon).
 revoke all on function public.combat_lock_for_gm(uuid, boolean) from public, anon, authenticated;
+revoke all on function public.combat_participant_combat_id(uuid) from public, anon, authenticated;
 revoke all on function public.start_combat(uuid) from public, anon;
 revoke all on function public.end_combat(uuid) from public, anon;
 revoke all on function public.set_my_initiative(uuid, integer) from public, anon;

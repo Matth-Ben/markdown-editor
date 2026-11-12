@@ -14,7 +14,7 @@
 
 begin;
 
-select plan(52);
+select plan(113);
 
 -- Fixtures (insérées en tant que postgres, qui contourne RLS) --------------------
 -- c...01 : MJ (propriétaire de A, MJ sans personnage)   c...02 : joueur 1
@@ -49,6 +49,24 @@ values
   ('d0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', 'membre', false, now() - interval '2 hours'),
   ('d0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000003', 'membre', false, now() - interval '1 hour'),
   ('d0000000-0000-0000-0000-000000000002', 'e0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000005', 'owner', false, now());
+
+
+-- Fixtures du second jeu de tests (groupe C : MJ c...06, membres c...07 et c...08, arrivant c...09).
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+select ('c0000000-0000-0000-0000-0000000000' || n)::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+       'pgtap-combat-c' || n || '@test.local', crypt('password123', gen_salt('bf')), now(), '{}', '{}', now(), now()
+  from (values ('06'), ('07'), ('08'), ('09')) v(n);
+insert into public.groups (id, name, owner_id, invite_code)
+values ('d0000000-0000-0000-0000-000000000003', 'pgTAP combat C', 'c0000000-0000-0000-0000-000000000006', 'PGTAPCC1');
+insert into public.characters (id, owner_id, name) values
+  ('e0000000-0000-0000-0000-000000000007', 'c0000000-0000-0000-0000-000000000007', 'Alpha'),
+  ('e0000000-0000-0000-0000-000000000008', 'c0000000-0000-0000-0000-000000000008', 'Beta'),
+  ('e0000000-0000-0000-0000-000000000018', 'c0000000-0000-0000-0000-000000000008', 'Gamma'),
+  ('e0000000-0000-0000-0000-000000000009', 'c0000000-0000-0000-0000-000000000009', 'Delta');
+insert into public.group_members (group_id, character_id, user_id, role, is_game_master, joined_at) values
+  ('d0000000-0000-0000-0000-000000000003', null, 'c0000000-0000-0000-0000-000000000006', 'owner', true, now() - interval '3 hours'),
+  ('d0000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000007', 'c0000000-0000-0000-0000-000000000007', 'membre', false, now() - interval '2 hours'),
+  ('d0000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000008', 'c0000000-0000-0000-0000-000000000008', 'membre', false, now() - interval '1 hour');
 
 -- Contexte partagé (identifiants du combat courant), lisible par tous les rôles.
 create temp table ctx (k text primary key, v uuid);
@@ -394,11 +412,225 @@ select is(
   1,
   'MJ parti : le MJ (propriétaire) lit encore le combat actif'
 );
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ select public.set_my_initiative((select id from public.combats where group_id = 'd0000000-0000-0000-0000-000000000001' and status = 'active'), 7) $$,
+  'P0001', 'gm_absent',
+  'MJ parti : un joueur ne peut plus écrire (gm_absent)'
+);
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 select lives_ok(
   $$ select public.end_combat((select id from public.combats where group_id = 'd0000000-0000-0000-0000-000000000001' and status = 'active')) $$,
   'MJ parti : le MJ peut terminer le combat'
 );
 reset role;
+
+
+-- ===== Second jeu : groupe C =====
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
+select lives_ok($$ select public.start_combat('d0000000-0000-0000-0000-000000000003') $$, 'MJ 2 : lancement dans le groupe C');
+reset role;
+insert into ctx select 'cc', id from public.combats where group_id = 'd0000000-0000-0000-0000-000000000003' and status = 'active';
+insert into ctx select 'm1row', id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and user_id = 'c0000000-0000-0000-0000-000000000007';
+insert into ctx select 'm2row', id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and user_id = 'c0000000-0000-0000-0000-000000000008';
+select throws_ok(
+  $$ insert into public.combats (group_id) values ('d0000000-0000-0000-0000-000000000003') $$,
+  '23505', null,
+  'Insertion directe d''un second combat actif : refusée par l''index unique'
+);
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order, initiative) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'X', 'npc', 90, 61) $$,
+  '23514', null,
+  'CHECK initiative > 60 refusé'
+);
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order, initiative) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'X', 'npc', 90, -21) $$,
+  '23514', null,
+  'CHECK initiative < -20 refusé'
+);
+select lives_ok($$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order, initiative) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'Min', 'npc', 91, -20) $$, 'Borne -20 acceptée');
+select lives_ok($$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order, initiative) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'Max', 'npc', 92, 60) $$, 'Borne 60 acceptée');
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', '', 'npc', 93) $$,
+  '23514', null,
+  'CHECK nom vide refusé'
+);
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', repeat('a', 81), 'npc', 93) $$,
+  '23514', null,
+  'CHECK nom de 81 caractères refusé'
+);
+select lives_ok($$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', repeat('a', 80), 'npc', 93) $$, 'Nom de 80 caractères accepté');
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'X', 'pc', 94) $$,
+  '23514', null,
+  'CHECK kind_shape : un PJ sans user_id refusé'
+);
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order, user_id) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'X', 'npc', 94, 'c0000000-0000-0000-0000-000000000007') $$,
+  '23514', null,
+  'CHECK kind_shape : un PNJ avec user_id refusé'
+);
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'X', 'npc', 0) $$,
+  '23514', null,
+  'CHECK sort_order >= 1'
+);
+select throws_ok(
+  $$ insert into public.combat_participants (combat_id, group_id, name, kind, sort_order, status) values ((select v from ctx where k = 'cc'), 'd0000000-0000-0000-0000-000000000003', 'X', 'npc', 95, 'inconnu') $$,
+  '23514', null,
+  'CHECK status participant'
+);
+select throws_ok(
+  $$ insert into public.combats (group_id, status, ended_at) values ('d0000000-0000-0000-0000-000000000002', 'ended', null) $$,
+  '23514', null,
+  'CHECK combats : terminé sans ended_at refusé'
+);
+select throws_ok(
+  $$ insert into public.combats (group_id, status, ended_at) values ('d0000000-0000-0000-0000-000000000002', 'active', now()) $$,
+  '23514', null,
+  'CHECK combats : actif avec ended_at refusé'
+);
+select throws_ok(
+  $$ insert into public.combats (group_id, round) values ('d0000000-0000-0000-0000-000000000002', 0) $$,
+  '23514', null,
+  'CHECK round >= 1'
+);
+select throws_ok(
+  $$ update public.combats set current_participant_id = (select p.id from public.combat_participants p where p.combat_id = (select v from ctx where k = 'combat') limit 1) where id = (select v from ctx where k = 'cc') $$,
+  '23503', null,
+  'FK composite : le tour courant doit appartenir au même combat'
+);
+delete from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and name in ('Min', 'Max', repeat('a', 80));
+select is((select count(*)::int from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('start_combat','end_combat','set_my_initiative','set_participant_initiative','add_npc_participants','remove_participant','reorder_participant') and has_function_privilege('anon', p.oid, 'execute')), 0, 'anon/public sans EXECUTE sur les 7 RPC');
+select is((select count(*)::int from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('start_combat','end_combat','set_my_initiative','set_participant_initiative','add_npc_participants','remove_participant','reorder_participant') and not has_function_privilege('authenticated', p.oid, 'execute')), 0, 'authenticated a EXECUTE sur les 7 RPC');
+select is((select count(*)::int from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('group_has_gm','combat_lock_for_gm','combat_participant_combat_id','on_group_member_left_combat','on_combat_participant_deleted') and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute'))), 0, 'helpers internes et fonctions de trigger inaccessibles aux clients');
+select is((select count(*)::int from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('is_group_owner') and (has_function_privilege('anon', p.oid, 'execute') or not has_function_privilege('authenticated', p.oid, 'execute'))), 0, 'is_group_owner : authenticated oui, anon non');
+select is((select count(*)::int from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('start_combat','end_combat','set_my_initiative','set_participant_initiative','add_npc_participants','remove_participant','reorder_participant','group_has_gm','combat_lock_for_gm','combat_participant_combat_id','on_group_member_left_combat','on_combat_participant_deleted','is_group_owner') and p.prosecdef and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')), 0, 'Toutes les fonctions security definer fixent leur search_path');
+select is((select count(*)::int from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('start_combat','end_combat','set_my_initiative','set_participant_initiative','add_npc_participants','remove_participant','reorder_participant','group_has_gm','combat_lock_for_gm','combat_participant_combat_id','on_group_member_left_combat','on_combat_participant_deleted','is_group_owner')), 13, 'Les 13 fonctions attendues existent');
+select is((select count(*)::int from pg_proc where proname = 'combat_group_id'), 0, 'Fonction morte combat_group_id absente');
+select ok(not (has_table_privilege('authenticated', 'public.combats', 'INSERT') or has_table_privilege('authenticated', 'public.combats', 'UPDATE') or has_table_privilege('authenticated', 'public.combats', 'DELETE') or has_table_privilege('authenticated', 'public.combat_participants', 'INSERT') or has_table_privilege('authenticated', 'public.combat_participants', 'UPDATE') or has_table_privilege('authenticated', 'public.combat_participants', 'DELETE')), 'authenticated sans INSERT/UPDATE/DELETE sur les deux tables');
+select ok(has_table_privilege('authenticated', 'public.combats', 'SELECT') and has_table_privilege('authenticated', 'public.combat_participants', 'SELECT') and not has_table_privilege('anon', 'public.combats', 'SELECT') and not has_table_privilege('anon', 'public.combat_participants', 'SELECT'), 'SELECT pour authenticated, rien pour anon');
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000004', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ select public.end_combat((select v from ctx where k = 'cc')) $$,
+  'P0002', 'combat_not_found',
+  'Non-membre : end_combat -> combat_not_found'
+);
+select throws_ok(
+  $$ select public.add_npc_participants((select v from ctx where k = 'cc'), 'Orc', 5, 1) $$,
+  'P0002', 'combat_not_found',
+  'Non-membre : add_npc_participants -> combat_not_found'
+);
+select throws_ok(
+  $$ select public.remove_participant((select v from ctx where k = 'm1row')) $$,
+  'P0002', 'combat_not_found',
+  'Non-membre : remove_participant -> combat_not_found'
+);
+select throws_ok(
+  $$ select public.set_participant_initiative((select v from ctx where k = 'm1row'), 5) $$,
+  'P0002', 'combat_not_found',
+  'Non-membre : set_participant_initiative -> combat_not_found'
+);
+select throws_ok(
+  $$ select public.reorder_participant((select v from ctx where k = 'm1row'), 1) $$,
+  'P0002', 'combat_not_found',
+  'Non-membre : reorder_participant -> combat_not_found'
+);
+select throws_ok(
+  $$ select public.remove_participant('00000000-0000-0000-0000-00000000dead') $$,
+  'P0002', 'combat_not_found',
+  'Participant inexistant : remove_participant -> combat_not_found'
+);
+select throws_ok(
+  $$ select public.reorder_participant('00000000-0000-0000-0000-00000000dead', 1) $$,
+  'P0002', 'combat_not_found',
+  'Participant inexistant : reorder_participant -> combat_not_found'
+);
+select throws_ok(
+  $$ select public.set_participant_initiative('00000000-0000-0000-0000-00000000dead', 1) $$,
+  'P0002', 'combat_not_found',
+  'Participant inexistant : set_participant_initiative -> combat_not_found'
+);
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
+select lives_ok($$ select public.add_npc_participants((select v from ctx where k = 'cc'), 'Orc', 5, 1) $$, 'MJ 2 ajoute un Orc');
+reset role;
+insert into ctx select 'orc', id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and name = 'Orc';
+insert into public.group_members (group_id, character_id, user_id, role, is_game_master) values ('d0000000-0000-0000-0000-000000000003', 'e0000000-0000-0000-0000-000000000009', 'c0000000-0000-0000-0000-000000000009', 'membre', false);
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000009', 'role', 'authenticated')::text, true);
+select is((select name from public.set_my_initiative((select v from ctx where k = 'cc'), 20)), 'Delta', 'Un membre arrivé après le lancement obtient sa ligne à la première saisie');
+reset role;
+select is((select string_agg(name, ',' order by sort_order) from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and name in ('Alpha','Beta','Delta','Orc')), 'Alpha,Beta,Delta,Orc', 'La ligne créée paresseusement est insérée avant le premier PNJ');
+update public.group_members set character_id = 'e0000000-0000-0000-0000-000000000018' where group_id = 'd0000000-0000-0000-0000-000000000003' and user_id = 'c0000000-0000-0000-0000-000000000008';
+select is((select status from public.combat_participants where id = (select v from ctx where k = 'm2row')), 'removed', 'Changement de personnage : l''ancienne ligne PJ est retirée');
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000008', 'role', 'authenticated')::text, true);
+select is((select name from public.set_my_initiative((select v from ctx where k = 'cc'), 11)), 'Gamma', 'Changement de personnage : nouvelle ligne créée à la saisie');
+reset role;
+select is((select count(*)::int from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and user_id = 'c0000000-0000-0000-0000-000000000008' and status <> 'removed'), 1, 'Un seul PJ vivant pour ce joueur');
+update public.group_members set character_id = 'e0000000-0000-0000-0000-000000000008' where group_id = 'd0000000-0000-0000-0000-000000000003' and user_id = 'c0000000-0000-0000-0000-000000000008';
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000008', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ select public.set_my_initiative((select v from ctx where k = 'cc'), 12) $$,
+  'P0001', 'participant_removed',
+  'Retour à un personnage dont la ligne a été retirée : participant_removed'
+);
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
+select is((select initiative from public.set_participant_initiative((select v from ctx where k = 'm1row'), 10)), 10, 'MJ fixe l''initiative d''un PJ');
+select is((select initiative from public.set_participant_initiative((select v from ctx where k = 'm1row'), null)), null::integer, 'set_participant_initiative(NULL) remet à saisir');
+select throws_ok(
+  $$ select public.set_participant_initiative((select v from ctx where k = 'm2row'), 5) $$,
+  'P0001', 'participant_removed',
+  'MJ : participant retiré non modifiable'
+);
+select lives_ok($$ select public.add_npc_participants((select v from ctx where k = 'cc'), 'Rat', 1, 20) $$, 'Lot de 20');
+select lives_ok($$ select public.add_npc_participants((select v from ctx where k = 'cc'), 'Rat', 1, 20) $$, 'Second lot de 20');
+select lives_ok($$ select public.add_npc_participants((select v from ctx where k = 'cc'), 'Rat', 1, 19) $$, 'Troisième lot : 60 PNJ non retirés avec l''Orc');
+select throws_ok(
+  $$ select public.add_npc_participants((select v from ctx where k = 'cc'), 'Rat', 1, 1) $$,
+  'P0001', 'npc_limit_per_combat',
+  '61e PNJ non retiré refusé'
+);
+select is((select name from public.remove_participant((select id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and name = 'Rat 1'))), 'Rat 1', 'Retrait d''un Rat');
+select is((select name from public.add_npc_participants((select v from ctx where k = 'cc'), 'Rat', 1, 1)), 'Rat', 'Un PNJ retiré libère une place sous la limite de 60');
+reset role;
+update public.combats set current_participant_id = (select v from ctx where k = 'm1row') where id = (select v from ctx where k = 'cc');
+delete from public.group_members where group_id = 'd0000000-0000-0000-0000-000000000003' and user_id = 'c0000000-0000-0000-0000-000000000007';
+select is((select status from public.combat_participants where id = (select v from ctx where k = 'm1row')), 'removed', 'Départ du joueur au tour courant : ligne retirée');
+select is((select current_participant_id from public.combats where id = (select v from ctx where k = 'cc')), (select v from ctx where k = 'm1row'), 'Le tour courant n''est pas modifié par le départ');
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000006', 'role', 'authenticated')::text, true);
+select is((select status from public.end_combat((select v from ctx where k = 'cc'))), 'ended', 'Fin du combat C');
+select is((select ended_at from public.end_combat((select v from ctx where k = 'cc'))) = (select ended_at from public.combats where id = (select v from ctx where k = 'cc')), true, 'end_combat idempotent : ended_at inchangé');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000009', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ select public.set_my_initiative((select v from ctx where k = 'cc'), 3) $$,
+  'P0001', 'combat_not_active',
+  'Combat terminé : écriture joueur refusée'
+);
+reset role;
+update public.combats set current_participant_id = (select v from ctx where k = 'orc') where id = (select v from ctx where k = 'cc');
+delete from public.combat_participants where id = (select v from ctx where k = 'orc');
+select is((select current_participant_id from public.combats where id = (select v from ctx where k = 'cc')), null::uuid, 'Suppression directe du participant au tour courant : current_participant_id remis à NULL');
+update public.combats set current_participant_id = (select id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and user_id = 'c0000000-0000-0000-0000-000000000009') where id = (select v from ctx where k = 'cc');
+select lives_ok($$ delete from auth.users where id = 'c0000000-0000-0000-0000-000000000009' $$, 'Suppression en cascade d''un utilisateur dont la ligne est le tour courant');
+select is((select current_participant_id from public.combats where id = (select v from ctx where k = 'cc')), null::uuid, 'Cascade utilisateur : tour courant remis à NULL');
+update public.combats set current_participant_id = (select id from public.combat_participants where combat_id = (select v from ctx where k = 'cc') and name = 'Rat 2') where id = (select v from ctx where k = 'cc');
+select lives_ok($$ delete from public.groups where id = 'd0000000-0000-0000-0000-000000000003' $$, 'Suppression en cascade du groupe (combat + participants, tour courant renseigné)');
+select is((select count(*)::int from public.combats where group_id = 'd0000000-0000-0000-0000-000000000003') + (select count(*)::int from public.combat_participants where group_id = 'd0000000-0000-0000-0000-000000000003'), 0, 'Cascade groupe : plus aucun combat ni participant');
 
 select * from finish();
 

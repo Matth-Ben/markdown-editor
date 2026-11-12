@@ -40,12 +40,15 @@
 --   drop trigger if exists group_members_leave_combat_delete on public.group_members;
 --   drop trigger if exists group_members_leave_combat_update on public.group_members;
 --   drop function if exists public.on_group_member_left_combat();
+--   drop trigger if exists combat_participants_before_delete on public.combat_participants;
+--   drop function if exists public.on_combat_participant_deleted();
 --   (puis le retour arrière de 20261114091000, puis :)
 --   drop table if exists public.combat_participants cascade;
 --   drop table if exists public.combats cascade;
+--   ATTENTION : ce retour arrière supprime définitivement tous les combats et
+--   participants (actifs et terminés) avec les tables.
 --   drop function if exists public.is_group_owner(uuid);
 --   drop function if exists public.group_has_gm(uuid);
---   drop function if exists public.combat_group_id(uuid);
 
 -- Tables ---------------------------------------------------------------------
 
@@ -131,8 +134,11 @@ create index if not exists combat_participants_group_id_idx
   on public.combat_participants (group_id);
 
 -- FK du tour courant : doit désigner un participant DU MÊME combat (FK
--- composite). `on delete set null (current_participant_id)` (PostgreSQL >= 15)
--- n'annule que cette colonne, pas combats.id.
+-- composite, NO ACTION). Pas de `on delete set null (colonne)` (PostgreSQL >=
+-- 15 uniquement) : un trigger BEFORE DELETE sur combat_participants (plus bas)
+-- remet current_participant_id à NULL avant la suppression du participant, ce
+-- qui rend les suppressions en cascade (groupe, utilisateur, combat) sûres sur
+-- PostgreSQL 14 comme sur les versions récentes.
 do $$
 begin
   if not exists (
@@ -143,10 +149,30 @@ begin
     alter table public.combats
       add constraint combats_current_participant_fk
       foreign key (current_participant_id, id)
-      references public.combat_participants (id, combat_id)
-      on delete set null (current_participant_id);
+      references public.combat_participants (id, combat_id);
   end if;
 end $$;
+
+create or replace function public.on_combat_participant_deleted()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  update public.combats
+     set current_participant_id = null
+   where current_participant_id = old.id;
+  return old;
+end;
+$$;
+
+revoke all on function public.on_combat_participant_deleted() from public, anon, authenticated;
+
+drop trigger if exists combat_participants_before_delete on public.combat_participants;
+create trigger combat_participants_before_delete
+  before delete on public.combat_participants
+  for each row execute function public.on_combat_participant_deleted();
 
 -- Helpers security definer ------------------------------------------------------
 -- Security definer pour éviter toute récursion RLS (même patron que
@@ -187,24 +213,10 @@ as $$
   );
 $$;
 
--- Groupe d'un combat, lu hors RLS (accès aux participants "par combat_id" sans
--- récursion de policies). Usage interne.
-create or replace function public.combat_group_id(p_combat_id uuid)
-returns uuid
-language sql
-security definer
-stable
-set search_path = public, pg_temp
-as $$
-  select c.group_id from public.combats c where c.id = p_combat_id;
-$$;
-
 revoke all on function public.is_group_owner(uuid) from public, anon;
 revoke all on function public.group_has_gm(uuid) from public, anon, authenticated;
-revoke all on function public.combat_group_id(uuid) from public, anon, authenticated;
 grant execute on function public.is_group_owner(uuid) to authenticated;
 grant execute on function public.group_has_gm(uuid) to service_role;
-grant execute on function public.combat_group_id(uuid) to service_role;
 
 -- RLS / privilèges ---------------------------------------------------------------
 
@@ -258,6 +270,16 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
+  -- Course départ / création de ligne PJ : set_my_initiative tient un verrou
+  -- FOR UPDATE sur le combat. Prendre le même verrou ici sérialise les deux :
+  -- soit la ligne PJ créée est vue (UPDATE en READ COMMITTED) puis retirée, soit
+  -- set_my_initiative revoit l'appartenance après commit et refuse. Pas de risque
+  -- de deadlock : set_my_initiative ne prend aucun verrou sur group_members avant
+  -- d'avoir le verrou du combat, et ce trigger ne verrouille que des combats.
+  perform 1 from public.combats c
+   where c.group_id = old.group_id and c.status = 'active'
+   for update;
+
   if tg_op = 'DELETE' then
     update public.combat_participants p
        set status = 'removed'
