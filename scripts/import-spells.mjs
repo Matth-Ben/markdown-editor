@@ -391,7 +391,15 @@ function buildClassIndex(sourceLookup) {
       // les deux tableaux plutot que de ne lire que meta.class, sous peine
       // de sorts sans aucune classe associee (spell_classes vide) alors
       // qu'ils sont bien apprenables par au moins une classe du jeu.
-      const rawClassEntries = [...(meta.class || []), ...(meta.classVariant || [])];
+      // Perimetre fige : PHB 2014 + XGE + TCE. On ne retient une entree classVariant que si elle
+      // est definie par XGE/TCE (ou par le livre du sort lui-meme, ex. FTD), jamais par une autre
+      // source (evite d'importer des listes etrangeres au perimetre, voir migration
+      // 20261113090000_fix_spell_class_lists_phb_xge_tce.sql).
+      const allowedDefinitions = new Set(['XGE', 'TCE', book]);
+      const rawClassEntries = [
+        ...(meta.class || []),
+        ...(meta.classVariant || []).filter((item) => allowedDefinitions.has(item.definedInSource)),
+      ];
       const classes = [...new Set(rawClassEntries.map((item) => CLASS_EN_TO_FR[item.name]).filter(Boolean))];
       if (classes.length) {
         direct.set(`${book}:${key}`, classes);
