@@ -64,6 +64,10 @@ T = [
     ("user_push_tokens", "token", "platform = platform",
      "insert into public.user_push_tokens (token, user_id, platform) values ('tok-' || md5(random()::text), '{u}', 'ios')"),
 ]
+# colonne « propriétaire » de chaque table, pour les UPDATE de transfert de propriété (set <col> = <autre utilisateur>)
+OWNER_COL = {"characters": "owner_id", "groups": "owner_id", "group_members": "user_id", "group_notes": "user_id",
+             "group_journal_entries": "user_id", "bug_reports": "reporter_id", "user_push_tokens": "user_id",
+             "notification_preferences": "user_id"}
 OWN_CHAR = {"A": CA, "B": CB, "D": CD}  # personnage du profil (les autres n'en ont pas : on tente celui de A)
 profiles = [("anon", None, "anon")] + [(k, v, "authenticated") for k, v in U.items()]
 for name, uid, role in profiles:
@@ -78,6 +82,10 @@ for name, uid, role in profiles:
         w("select '%s' as t, count(*) as lignes, md5(coalesce(string_agg(%s::text, ',' order by %s::text), '')) as empreinte from public.%s;" % (tbl, key, key, tbl))
         w("savepoint s;"); w("update public.%s set %s;" % (tbl, upd)); w("rollback to savepoint s;")
         w("savepoint s;"); w("delete from public.%s;" % tbl); w("rollback to savepoint s;")
+        if tbl in OWNER_COL:
+            tgt = U["D"] if name != "D" else U["A"]
+            w("\\echo transfert %s" % tbl)
+            w("savepoint s;"); w("update public.%s set %s = '%s';" % (tbl, OWNER_COL[tbl], tgt)); w("rollback to savepoint s;")
         if ins:
             me = uid or "00000000-0000-0000-0000-000000000000"
             other = U["D"] if name != "D" else U["A"]

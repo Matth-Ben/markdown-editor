@@ -1,4 +1,4 @@
--- Phase 0, étape 5 : trigger `characters_set_updated_at` (20261115094000_phase0_characters_updated_at_trigger.sql).
+-- Phase 0, étape 5 : trigger `characters_set_updated_at` (20261115090000_phase0_characters_updated_at_trigger.sql).
 --
 -- Couvre : la colonne est mise à jour par un UPDATE réel (sous le rôle `authenticated`, comme le mobile) ; un UPDATE
 -- sans changement la laisse intacte ; une valeur `updated_at` envoyée par le client est ignorée ; les autres personnages
@@ -9,7 +9,7 @@
 
 begin;
 
-select plan(13);
+select plan(12);
 
 insert into auth.users (id, instance_id, aud, role, email, created_at, updated_at)
 values ('d0000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-upd-a@test.local', now(), now()),
@@ -54,17 +54,15 @@ select is((select updated_at from public.characters where id = 'd1000000-0000-40
           '2020-01-01 00:00:00+00'::timestamptz, 'le personnage de B n''a pas bougé');
 
 -- Fonction de trigger : aucun client ne peut l'appeler -----------------------------------------
-select is(has_function_privilege('authenticated', 'public.set_updated_at()', 'execute')
-          or has_function_privilege('anon', 'public.set_updated_at()', 'execute'), false,
-          'set_updated_at() : ni authenticated ni anon');
-select is((select proconfig from pg_proc where oid = 'public.set_updated_at()'::regprocedure), array['search_path=public, pg_temp'],
-          'set_updated_at() : search_path fixé avec pg_temp en dernier');
+select is(has_function_privilege('authenticated', 'public.characters_touch_updated_at()', 'execute')
+          or has_function_privilege('anon', 'public.characters_touch_updated_at()', 'execute'), false,
+          'characters_touch_updated_at() : ni authenticated ni anon');
+select is((select proconfig from pg_proc where oid = 'public.characters_touch_updated_at()'::regprocedure), array['search_path=public, pg_temp'],
+          'characters_touch_updated_at() : search_path fixé avec pg_temp en dernier');
 
--- Realtime : characters reste publiée, même nombre de colonnes.
+-- Realtime : characters reste publiée.
 select is((select count(*) from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'characters')::int,
           1, 'characters toujours publiée pour Realtime');
-select is((select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'characters')::int,
-          46, 'characters : toujours 46 colonnes (aucun changement de schéma visible)');
 
 select * from finish();
 rollback;

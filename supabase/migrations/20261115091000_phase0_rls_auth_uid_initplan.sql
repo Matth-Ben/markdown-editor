@@ -1,4 +1,4 @@
--- Phase 0 « hygiène invisible » (étape 2/5) : politiques RLS, `auth.uid()` -> `(select auth.uid())`.
+-- Phase 0 « hygiène invisible » (étape 2/6) : politiques RLS, `auth.uid()` -> `(select auth.uid())`.
 --
 -- POURQUOI
 --   Une politique écrite `auth.uid() = owner_id` rappelle auth.uid() (lecture de la
@@ -32,9 +32,11 @@
 --     content_proposals/proposal_* : legacy gelé ou sans client (S01, M02).
 --
 -- RISQUE
---   `alter policy` pose un verrou ACCESS EXCLUSIVE très bref sur chaque table (catalogue
---   seul, aucune réécriture de données). `lock_timeout` à 10 s : échec propre plutôt
---   qu'une file d'attente. Contrôle de non-régression : supabase/tests/phase0_rls_initplan_test.sql
+--   `alter policy` pose un verrou ACCESS EXCLUSIVE (MESURÉ sur Postgres 17 via pg_locks : lectures ET écritures de la table
+--   attendent), conservé jusqu'au commit pour les 8 tables : la migration dure ~150 ms sur le jeu de test, mais elle attend
+--   la fin des requêtes en cours sur ces tables. `lock_timeout` à 10 s : échec propre (rien d'appliqué) plutôt qu'une file
+--   d'attente qui bloquerait tout derrière elle. Appliquer hors pic. Aucune réécriture de données.
+--   Contrôle de non-régression : supabase/tests/phase0_rls_initplan_test.sql et la matrice scripts/phase0/rls_matrix.sql
 --   (mêmes lignes visibles/modifiables pour propriétaire, membre de groupe, tiers, anonyme).
 --
 -- RETOUR ARRIÈRE : exécuter le bloc inverse (remet `auth.uid()` nu ; aucune donnée en jeu) :

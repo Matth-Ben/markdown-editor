@@ -12,7 +12,7 @@
 
 begin;
 
-select plan(62);
+select plan(63);
 
 insert into auth.users (id, instance_id, aud, role, email, created_at, updated_at)
 values ('e0000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pgtap-grants-a@test.local', now(), now()),
@@ -66,10 +66,10 @@ select is(has_function_privilege('service_role', 'public.trg_refresh_proposal_co
 -- Anonyme : appels directs refusés (42501), usages publics conservés.
 set local role anon;
 select set_config('request.jwt.claims', '', true);
-select throws_ok($q$select public.owns_character('e1000000-0000-4000-8000-000000000001')$q$, '42501', null, 'anon ne peut plus appeler owns_character');
-select throws_ok($q$select public.is_admin()$q$, '42501', null, 'anon ne peut plus appeler is_admin');
-select throws_ok($q$select public.claim_push_token('x', 'android')$q$, '42501', null, 'anon ne peut plus appeler claim_push_token');
-select throws_ok($q$select public.refresh_proposal_counts('e1000000-0000-4000-8000-000000000001')$q$, '42501', null, 'anon ne peut plus appeler refresh_proposal_counts');
+select throws_ok($q$select public.owns_character('e1000000-0000-4000-8000-000000000001')$q$, '42501', 'permission denied for function owns_character', 'anon ne peut plus appeler owns_character');
+select throws_ok($q$select public.is_admin()$q$, '42501', 'permission denied for function is_admin', 'anon ne peut plus appeler is_admin');
+select throws_ok($q$select public.claim_push_token('x', 'android')$q$, '42501', 'permission denied for function claim_push_token', 'anon ne peut plus appeler claim_push_token');
+select throws_ok($q$select public.refresh_proposal_counts('e1000000-0000-4000-8000-000000000001')$q$, '42501', 'permission denied for function refresh_proposal_counts', 'anon ne peut plus appeler refresh_proposal_counts');
 select lives_ok($q$select public.get_shared_character('jeton-inexistant')$q$, 'anon garde get_shared_character (partage public)');
 select lives_ok($q$select count(*) from public.abilities$q$, 'anon lit toujours la référence');
 select lives_ok($q$select count(*) from public.app_versions$q$, 'anon lit toujours app_versions');
@@ -101,6 +101,8 @@ set local role service_role;
 insert into public.groups (id, name, owner_id, invite_code) values ('e4000000-0000-4000-8000-000000000001', 'pgTAP grants', 'e0000000-0000-4000-8000-000000000001', 'PGTAPGR1');
 select is((select count(*) from public.group_treasure where group_id = 'e4000000-0000-4000-8000-000000000001')::int, 1, 'service_role : on_group_created crée toujours le trésor du groupe');
 reset role;
+-- Liste blanche : aucune fonction security definer de public (hors shim de test tap_*) n'est exécutable par anon, sauf celles-ci.
+select is((select count(*) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prokind = 'f' and p.prosecdef and p.proname not like 'tap\_%' and has_function_privilege('anon', p.oid, 'execute') and p.proname <> all (array['get_shared_character', 'content_proposals_author_name', 'group_members_display_name', 'proposal_comments_author_name', 'stories_gm_display_name']))::int, 0, 'aucune fonction definer exécutable par anon hors liste blanche');
 -- search_path
 select is((select count(*) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prosecdef and p.proname = any (array['apply_level_up','apply_rest','build_character_sheet_json','character_owner_can_read_joined_story','claim_push_token','content_proposals_author_name','create_character','get_group_member_character','get_shared_character','get_translation','group_member_can_read_character','group_members_display_name','is_admin','is_group_member','notify_character_campaign_access_revoked','notify_new_app_version','on_group_created','owns_character','proposal_comments_author_name','refresh_proposal_counts','release_push_token','stories_gm_display_name','story_owner_can_read_character','trg_refresh_proposal_counts']) and p.proconfig = array['search_path=public, pg_temp'])::int, 24, '24 fonctions definer avec search_path = public, pg_temp');
 select is((select count(*) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prosecdef and p.proname = any (array['apply_level_up','apply_rest','build_character_sheet_json','character_owner_can_read_joined_story','claim_push_token','content_proposals_author_name','create_character','get_group_member_character','get_shared_character','get_translation','group_member_can_read_character','group_members_display_name','is_admin','is_group_member','notify_character_campaign_access_revoked','notify_new_app_version','on_group_created','owns_character','proposal_comments_author_name','refresh_proposal_counts','release_push_token','stories_gm_display_name','story_owner_can_read_character','trg_refresh_proposal_counts']) and not (p.proconfig::text ~ 'pg_temp'))::int, 0, 'aucune des 24 fonctions sans pg_temp');

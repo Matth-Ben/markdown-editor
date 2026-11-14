@@ -20,7 +20,14 @@
 set -u
 [ -n "${PGBIN:-}" ] && export PATH="$PGBIN:$PATH"
 export PGCLIENTENCODING=UTF8
+# Sécurité : jamais de base distante. Aucun mot de passe/service hérité de l'environnement, hôte local obligatoire.
+unset PGPASSWORD PGSERVICE PGSERVICEFILE PGPASSFILE PGSSLMODE PGSSLROOTCERT DATABASE_URL
 H="${PGHOST:-127.0.0.1}"; PT="${PGPORT:-54999}"
+case "$H" in
+  127.0.0.1|localhost) ;;
+  *) echo "REFUS : PGHOST=$H n'est pas local (seuls 127.0.0.1 et localhost sont acceptés : ces scripts créent et suppriment des bases)."; exit 1 ;;
+esac
+ERR_FILE="$(mktemp 2>/dev/null || echo "${TMPDIR:-.}/jetable_err.$$")"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PSQL="psql -X -h $H -p $PT -U postgres"
 cmd="$1"; shift
@@ -37,8 +44,8 @@ case "$cmd" in
     for f in $(ls "$DIR"/*.sql | sort); do
       # pg_net / pg_cron ne sont pas installables sur ce Postgres : leurs schémas sont fournis par les stubs.
       sed -E 's/^create extension if not exists (pg_net|pg_cron) with schema extensions;/select 1;/' "$f" \
-        | $PSQL -q -v ON_ERROR_STOP=1 -d "$DB" -1 -f - >/dev/null 2>/tmp/jetable_err.txt \
-        || { echo "ECHEC $(basename "$f")"; cat /tmp/jetable_err.txt; exit 2; }
+        | $PSQL -q -v ON_ERROR_STOP=1 -d "$DB" -1 -f - >/dev/null 2>"$ERR_FILE" \
+        || { echo "ECHEC $(basename "$f")"; cat "$ERR_FILE"; exit 2; }
       n=$((n+1))
     done
     echo "OK : $n migrations rejouées dans $DB" ;;

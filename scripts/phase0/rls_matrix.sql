@@ -28,6 +28,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.characters;
 rollback to savepoint s;
+\echo transfert characters
+savepoint s;
+update public.characters set owner_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert characters pour soi
 savepoint s;
 insert into public.characters (owner_id, name) values ('00000000-0000-0000-0000-000000000000', 'nouveau');
@@ -68,6 +72,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.groups;
 rollback to savepoint s;
+\echo transfert groups
+savepoint s;
+update public.groups set owner_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert groups pour soi
 savepoint s;
 insert into public.groups (name, owner_id, invite_code) values ('nouveau', '00000000-0000-0000-0000-000000000000', 'MX' || substr(md5(random()::text), 1, 6));
@@ -83,6 +91,10 @@ update public.group_members set role = role;
 rollback to savepoint s;
 savepoint s;
 delete from public.group_members;
+rollback to savepoint s;
+\echo transfert group_members
+savepoint s;
+update public.group_members set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_members pour soi
 savepoint s;
@@ -108,6 +120,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.group_notes;
 rollback to savepoint s;
+\echo transfert group_notes
+savepoint s;
+update public.group_notes set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert group_notes pour soi
 savepoint s;
 insert into public.group_notes (group_id, user_id, body) values ('b0000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'nouveau');
@@ -123,6 +139,10 @@ update public.group_journal_entries set body = body || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.group_journal_entries;
+rollback to savepoint s;
+\echo transfert group_journal_entries
+savepoint s;
+update public.group_journal_entries set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_journal_entries pour soi
 savepoint s;
@@ -140,6 +160,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.bug_reports;
 rollback to savepoint s;
+\echo transfert bug_reports
+savepoint s;
+update public.bug_reports set reporter_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert bug_reports pour soi
 savepoint s;
 insert into public.bug_reports (reporter_id, title, description, severity) values ('00000000-0000-0000-0000-000000000000', 'n', 'n', 'mineur');
@@ -156,6 +180,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.notification_preferences;
 rollback to savepoint s;
+\echo transfert notification_preferences
+savepoint s;
+update public.notification_preferences set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert notification_preferences pour soi
 savepoint s;
 insert into public.notification_preferences (user_id) values ('00000000-0000-0000-0000-000000000000');
@@ -171,6 +199,10 @@ update public.user_push_tokens set platform = platform;
 rollback to savepoint s;
 savepoint s;
 delete from public.user_push_tokens;
+rollback to savepoint s;
+\echo transfert user_push_tokens
+savepoint s;
+update public.user_push_tokens set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert user_push_tokens pour soi
 savepoint s;
@@ -191,6 +223,10 @@ update public.characters set name = name || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.characters;
+rollback to savepoint s;
+\echo transfert characters
+savepoint s;
+update public.characters set owner_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert characters pour soi
 savepoint s;
@@ -232,6 +268,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.groups;
 rollback to savepoint s;
+\echo transfert groups
+savepoint s;
+update public.groups set owner_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert groups pour soi
 savepoint s;
 insert into public.groups (name, owner_id, invite_code) values ('nouveau', 'a0000000-0000-4000-8000-00000000000a', 'MX' || substr(md5(random()::text), 1, 6));
@@ -247,6 +287,10 @@ update public.group_members set role = role;
 rollback to savepoint s;
 savepoint s;
 delete from public.group_members;
+rollback to savepoint s;
+\echo transfert group_members
+savepoint s;
+update public.group_members set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_members pour soi
 savepoint s;
@@ -272,6 +316,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.group_notes;
 rollback to savepoint s;
+\echo transfert group_notes
+savepoint s;
+update public.group_notes set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert group_notes pour soi
 savepoint s;
 insert into public.group_notes (group_id, user_id, body) values ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-00000000000a', 'nouveau');
@@ -287,6 +335,10 @@ update public.group_journal_entries set body = body || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.group_journal_entries;
+rollback to savepoint s;
+\echo transfert group_journal_entries
+savepoint s;
+update public.group_journal_entries set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_journal_entries pour soi
 savepoint s;
@@ -304,6 +356,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.bug_reports;
 rollback to savepoint s;
+\echo transfert bug_reports
+savepoint s;
+update public.bug_reports set reporter_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert bug_reports pour soi
 savepoint s;
 insert into public.bug_reports (reporter_id, title, description, severity) values ('a0000000-0000-4000-8000-00000000000a', 'n', 'n', 'mineur');
@@ -320,6 +376,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.notification_preferences;
 rollback to savepoint s;
+\echo transfert notification_preferences
+savepoint s;
+update public.notification_preferences set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert notification_preferences pour soi
 savepoint s;
 insert into public.notification_preferences (user_id) values ('a0000000-0000-4000-8000-00000000000a');
@@ -335,6 +395,10 @@ update public.user_push_tokens set platform = platform;
 rollback to savepoint s;
 savepoint s;
 delete from public.user_push_tokens;
+rollback to savepoint s;
+\echo transfert user_push_tokens
+savepoint s;
+update public.user_push_tokens set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert user_push_tokens pour soi
 savepoint s;
@@ -355,6 +419,10 @@ update public.characters set name = name || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.characters;
+rollback to savepoint s;
+\echo transfert characters
+savepoint s;
+update public.characters set owner_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert characters pour soi
 savepoint s;
@@ -396,6 +464,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.groups;
 rollback to savepoint s;
+\echo transfert groups
+savepoint s;
+update public.groups set owner_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert groups pour soi
 savepoint s;
 insert into public.groups (name, owner_id, invite_code) values ('nouveau', 'a0000000-0000-4000-8000-00000000000b', 'MX' || substr(md5(random()::text), 1, 6));
@@ -411,6 +483,10 @@ update public.group_members set role = role;
 rollback to savepoint s;
 savepoint s;
 delete from public.group_members;
+rollback to savepoint s;
+\echo transfert group_members
+savepoint s;
+update public.group_members set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_members pour soi
 savepoint s;
@@ -436,6 +512,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.group_notes;
 rollback to savepoint s;
+\echo transfert group_notes
+savepoint s;
+update public.group_notes set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert group_notes pour soi
 savepoint s;
 insert into public.group_notes (group_id, user_id, body) values ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-00000000000b', 'nouveau');
@@ -451,6 +531,10 @@ update public.group_journal_entries set body = body || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.group_journal_entries;
+rollback to savepoint s;
+\echo transfert group_journal_entries
+savepoint s;
+update public.group_journal_entries set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_journal_entries pour soi
 savepoint s;
@@ -468,6 +552,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.bug_reports;
 rollback to savepoint s;
+\echo transfert bug_reports
+savepoint s;
+update public.bug_reports set reporter_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert bug_reports pour soi
 savepoint s;
 insert into public.bug_reports (reporter_id, title, description, severity) values ('a0000000-0000-4000-8000-00000000000b', 'n', 'n', 'mineur');
@@ -484,6 +572,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.notification_preferences;
 rollback to savepoint s;
+\echo transfert notification_preferences
+savepoint s;
+update public.notification_preferences set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert notification_preferences pour soi
 savepoint s;
 insert into public.notification_preferences (user_id) values ('a0000000-0000-4000-8000-00000000000b');
@@ -499,6 +591,10 @@ update public.user_push_tokens set platform = platform;
 rollback to savepoint s;
 savepoint s;
 delete from public.user_push_tokens;
+rollback to savepoint s;
+\echo transfert user_push_tokens
+savepoint s;
+update public.user_push_tokens set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert user_push_tokens pour soi
 savepoint s;
@@ -519,6 +615,10 @@ update public.characters set name = name || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.characters;
+rollback to savepoint s;
+\echo transfert characters
+savepoint s;
+update public.characters set owner_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert characters pour soi
 savepoint s;
@@ -560,6 +660,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.groups;
 rollback to savepoint s;
+\echo transfert groups
+savepoint s;
+update public.groups set owner_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert groups pour soi
 savepoint s;
 insert into public.groups (name, owner_id, invite_code) values ('nouveau', 'a0000000-0000-4000-8000-00000000000c', 'MX' || substr(md5(random()::text), 1, 6));
@@ -575,6 +679,10 @@ update public.group_members set role = role;
 rollback to savepoint s;
 savepoint s;
 delete from public.group_members;
+rollback to savepoint s;
+\echo transfert group_members
+savepoint s;
+update public.group_members set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_members pour soi
 savepoint s;
@@ -600,6 +708,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.group_notes;
 rollback to savepoint s;
+\echo transfert group_notes
+savepoint s;
+update public.group_notes set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert group_notes pour soi
 savepoint s;
 insert into public.group_notes (group_id, user_id, body) values ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-00000000000c', 'nouveau');
@@ -615,6 +727,10 @@ update public.group_journal_entries set body = body || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.group_journal_entries;
+rollback to savepoint s;
+\echo transfert group_journal_entries
+savepoint s;
+update public.group_journal_entries set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_journal_entries pour soi
 savepoint s;
@@ -632,6 +748,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.bug_reports;
 rollback to savepoint s;
+\echo transfert bug_reports
+savepoint s;
+update public.bug_reports set reporter_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert bug_reports pour soi
 savepoint s;
 insert into public.bug_reports (reporter_id, title, description, severity) values ('a0000000-0000-4000-8000-00000000000c', 'n', 'n', 'mineur');
@@ -648,6 +768,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.notification_preferences;
 rollback to savepoint s;
+\echo transfert notification_preferences
+savepoint s;
+update public.notification_preferences set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert notification_preferences pour soi
 savepoint s;
 insert into public.notification_preferences (user_id) values ('a0000000-0000-4000-8000-00000000000c');
@@ -663,6 +787,10 @@ update public.user_push_tokens set platform = platform;
 rollback to savepoint s;
 savepoint s;
 delete from public.user_push_tokens;
+rollback to savepoint s;
+\echo transfert user_push_tokens
+savepoint s;
+update public.user_push_tokens set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert user_push_tokens pour soi
 savepoint s;
@@ -683,6 +811,10 @@ update public.characters set name = name || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.characters;
+rollback to savepoint s;
+\echo transfert characters
+savepoint s;
+update public.characters set owner_id = 'a0000000-0000-4000-8000-00000000000a';
 rollback to savepoint s;
 \echo insert characters pour soi
 savepoint s;
@@ -724,6 +856,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.groups;
 rollback to savepoint s;
+\echo transfert groups
+savepoint s;
+update public.groups set owner_id = 'a0000000-0000-4000-8000-00000000000a';
+rollback to savepoint s;
 \echo insert groups pour soi
 savepoint s;
 insert into public.groups (name, owner_id, invite_code) values ('nouveau', 'a0000000-0000-4000-8000-00000000000d', 'MX' || substr(md5(random()::text), 1, 6));
@@ -739,6 +875,10 @@ update public.group_members set role = role;
 rollback to savepoint s;
 savepoint s;
 delete from public.group_members;
+rollback to savepoint s;
+\echo transfert group_members
+savepoint s;
+update public.group_members set user_id = 'a0000000-0000-4000-8000-00000000000a';
 rollback to savepoint s;
 \echo insert group_members pour soi
 savepoint s;
@@ -764,6 +904,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.group_notes;
 rollback to savepoint s;
+\echo transfert group_notes
+savepoint s;
+update public.group_notes set user_id = 'a0000000-0000-4000-8000-00000000000a';
+rollback to savepoint s;
 \echo insert group_notes pour soi
 savepoint s;
 insert into public.group_notes (group_id, user_id, body) values ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-00000000000d', 'nouveau');
@@ -779,6 +923,10 @@ update public.group_journal_entries set body = body || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.group_journal_entries;
+rollback to savepoint s;
+\echo transfert group_journal_entries
+savepoint s;
+update public.group_journal_entries set user_id = 'a0000000-0000-4000-8000-00000000000a';
 rollback to savepoint s;
 \echo insert group_journal_entries pour soi
 savepoint s;
@@ -796,6 +944,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.bug_reports;
 rollback to savepoint s;
+\echo transfert bug_reports
+savepoint s;
+update public.bug_reports set reporter_id = 'a0000000-0000-4000-8000-00000000000a';
+rollback to savepoint s;
 \echo insert bug_reports pour soi
 savepoint s;
 insert into public.bug_reports (reporter_id, title, description, severity) values ('a0000000-0000-4000-8000-00000000000d', 'n', 'n', 'mineur');
@@ -812,6 +964,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.notification_preferences;
 rollback to savepoint s;
+\echo transfert notification_preferences
+savepoint s;
+update public.notification_preferences set user_id = 'a0000000-0000-4000-8000-00000000000a';
+rollback to savepoint s;
 \echo insert notification_preferences pour soi
 savepoint s;
 insert into public.notification_preferences (user_id) values ('a0000000-0000-4000-8000-00000000000d');
@@ -827,6 +983,10 @@ update public.user_push_tokens set platform = platform;
 rollback to savepoint s;
 savepoint s;
 delete from public.user_push_tokens;
+rollback to savepoint s;
+\echo transfert user_push_tokens
+savepoint s;
+update public.user_push_tokens set user_id = 'a0000000-0000-4000-8000-00000000000a';
 rollback to savepoint s;
 \echo insert user_push_tokens pour soi
 savepoint s;
@@ -847,6 +1007,10 @@ update public.characters set name = name || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.characters;
+rollback to savepoint s;
+\echo transfert characters
+savepoint s;
+update public.characters set owner_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert characters pour soi
 savepoint s;
@@ -888,6 +1052,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.groups;
 rollback to savepoint s;
+\echo transfert groups
+savepoint s;
+update public.groups set owner_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert groups pour soi
 savepoint s;
 insert into public.groups (name, owner_id, invite_code) values ('nouveau', 'a0000000-0000-4000-8000-00000000000e', 'MX' || substr(md5(random()::text), 1, 6));
@@ -903,6 +1071,10 @@ update public.group_members set role = role;
 rollback to savepoint s;
 savepoint s;
 delete from public.group_members;
+rollback to savepoint s;
+\echo transfert group_members
+savepoint s;
+update public.group_members set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_members pour soi
 savepoint s;
@@ -928,6 +1100,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.group_notes;
 rollback to savepoint s;
+\echo transfert group_notes
+savepoint s;
+update public.group_notes set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert group_notes pour soi
 savepoint s;
 insert into public.group_notes (group_id, user_id, body) values ('b0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-00000000000e', 'nouveau');
@@ -943,6 +1119,10 @@ update public.group_journal_entries set body = body || '!';
 rollback to savepoint s;
 savepoint s;
 delete from public.group_journal_entries;
+rollback to savepoint s;
+\echo transfert group_journal_entries
+savepoint s;
+update public.group_journal_entries set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert group_journal_entries pour soi
 savepoint s;
@@ -960,6 +1140,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.bug_reports;
 rollback to savepoint s;
+\echo transfert bug_reports
+savepoint s;
+update public.bug_reports set reporter_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert bug_reports pour soi
 savepoint s;
 insert into public.bug_reports (reporter_id, title, description, severity) values ('a0000000-0000-4000-8000-00000000000e', 'n', 'n', 'mineur');
@@ -976,6 +1160,10 @@ rollback to savepoint s;
 savepoint s;
 delete from public.notification_preferences;
 rollback to savepoint s;
+\echo transfert notification_preferences
+savepoint s;
+update public.notification_preferences set user_id = 'a0000000-0000-4000-8000-00000000000d';
+rollback to savepoint s;
 \echo insert notification_preferences pour soi
 savepoint s;
 insert into public.notification_preferences (user_id) values ('a0000000-0000-4000-8000-00000000000e');
@@ -991,6 +1179,10 @@ update public.user_push_tokens set platform = platform;
 rollback to savepoint s;
 savepoint s;
 delete from public.user_push_tokens;
+rollback to savepoint s;
+\echo transfert user_push_tokens
+savepoint s;
+update public.user_push_tokens set user_id = 'a0000000-0000-4000-8000-00000000000d';
 rollback to savepoint s;
 \echo insert user_push_tokens pour soi
 savepoint s;
