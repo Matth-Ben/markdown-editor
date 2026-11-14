@@ -5,7 +5,7 @@
 
 -- ============================== AVANT (état réel, objets ajoutés hors migrations D58/D72) ==============================
 
--- C1. Volumétrie des tables concernées (estimation + taille) : à lire avant les migrations d'index (verrou SHARE de create index).
+-- C1. Volumétrie des tables concernées (estimation + taille) : à lire avant les étapes 5 à 7 (index) (verrou SHARE de create index).
 select c.relname as table_name, c.reltuples::bigint as lignes_estimees,
        pg_size_pretty(pg_total_relation_size(c.oid)) as taille_totale
   from pg_class c
@@ -52,7 +52,7 @@ select conrelid::regclass::text as table_name, conname, convalidated, pg_get_con
                                     'character_spell_slots', 'character_pact_slots', 'character_feature_uses')
  order by 1, 2;
 
--- C6. VIOLATIONS des 10 contraintes (doit renvoyer 0 partout, à lancer AVANT la migration CHECK (6/6) ; elle est aussi exécutée dans la migration, qui échoue s'il y en a : une ligne fautive ferait
+-- C6. VIOLATIONS des 10 contraintes (doit renvoyer 0 partout, à lancer AVANT l'étape 9/9 (CHECK) ; elle est aussi exécutée dans la migration, qui échoue s'il y en a : une ligne fautive ferait
 --     échouer tout UPDATE de cette ligne dès l'ajout de la contrainte NOT VALID ; et avant la validation différée).
 select 'characters_hp_nonnegative' as contrainte, count(*) as violations from public.characters where not (current_hp >= 0 and temporary_hp >= 0)
 union all select 'characters_xp_nonnegative', count(*) from public.characters where not (xp >= 0)
@@ -124,9 +124,51 @@ union all select 'fonction invoker exécutable par anon', p.oid::regprocedure::t
 
 -- C12. Collision éventuelle de fonctions/triggers de la migration trigger : voir C9 (attendu AVANT : aucune ligne `characters_touch_updated_at`).
 
+-- C11b. Second passage du garde-fou droits, SANS filtre de rôle, pour les 6 fonctions de la liste B (qui perdent AUSSI `authenticated`) :
+--       doit renvoyer 0 ligne (politiques de tout rôle et de tout schéma, vues, vues matérialisées, défauts de colonne, CHECK, toute fonction invoker).
+with f(name) as (values ('refresh_proposal_counts'), ('notify_character_campaign_access_revoked'), ('notify_new_app_version'),
+  ('on_group_created'), ('trg_content_proposals_review'), ('trg_refresh_proposal_counts')),
+re(r) as (select '\m(' || string_agg(name, '|') || ')\M' from f)
+select 'politique' as type_objet, schemaname || '.' || tablename || ' : ' || policyname || ' ' || roles::text as objet
+  from pg_policies, re where (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ~ re.r
+union all select 'vue', schemaname || '.' || viewname from pg_views, re
+ where schemaname not in ('pg_catalog', 'information_schema') and definition ~ re.r
+union all select 'vue matérialisée', schemaname || '.' || matviewname from pg_matviews, re
+ where schemaname not in ('pg_catalog', 'information_schema') and definition ~ re.r
+union all select 'défaut de colonne', c.oid::regclass::text || '.' || a.attname
+  from pg_attrdef d join pg_class c on c.oid = d.adrelid join pg_attribute a on a.attrelid = d.adrelid and a.attnum = d.adnum, re
+ where c.relnamespace not in ('pg_catalog'::regnamespace, 'information_schema'::regnamespace) and pg_get_expr(d.adbin, d.adrelid) ~ re.r
+union all select 'contrainte CHECK', conrelid::regclass::text || '.' || conname from pg_constraint, re
+ where contype = 'c' and pg_get_constraintdef(oid) ~ re.r
+union all select 'fonction non security definer', p.oid::regprocedure::text from pg_proc p, re
+ where p.prokind = 'f' and not p.prosecdef and p.pronamespace not in ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
+   and p.prosrc ~ re.r and p.proname not in (select name from f);
+
+-- C13. Transactions longues (à lancer juste avant les étapes 2 à 4 et 9) : aucune ligne attendue (xact_start de plus d'une minute).
+select pid, usename, state, now() - xact_start as duree, left(query, 80) as requete
+  from pg_stat_activity where xact_start is not null and now() - xact_start > interval '1 minute' and pid <> pg_backend_pid();
+
+-- C14. Tâches pg_cron (une tâche qui appelle l'une des 16 fonctions serait cassée par le retrait d'EXECUTE) :
+select jobid, username, command from cron.job order by jobid;
+
+-- C15. Hooks d'authentification : tableau de bord Supabase > Authentication > Hooks (vérifier à la main qu'aucun hook ne pointe vers l'une des 16
+--      fonctions du schéma public : `supabase_auth_admin` perdrait EXECUTE avec `revoke from public`). Côté SQL, rôles ayant EXECUTE sur les 16 fonctions :
+select p.proname, string_agg(distinct pg_get_userbyid(a.grantee), ', ') as roles_executeurs
+  from pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+ where p.pronamespace = 'public'::regnamespace and a.privilege_type = 'EXECUTE'
+   and p.proname in ('owns_character', 'is_group_member', 'is_admin', 'group_member_can_read_character', 'story_owner_can_read_character',
+                     'character_owner_can_read_joined_story', 'claim_push_token', 'release_push_token', 'claim_group_treasure_currency',
+                     'get_group_member_character', 'refresh_proposal_counts', 'notify_character_campaign_access_revoked', 'notify_new_app_version',
+                     'on_group_created', 'trg_content_proposals_review', 'trg_refresh_proposal_counts')
+ group by 1 order by 1;
+
+-- C16. Appels anonymes récents (journaux de l'API, Dashboard > Logs > API Edge Logs, 30 derniers jours) : chercher les requêtes
+--      /rest/v1/rpc/<nom> pour chacune des 16 fonctions sans jeton utilisateur (clés `anon`) : y compris des clients hors dépôt (futur outil
+--      de Florian). Aucune requête SQL possible : à faire dans l'interface, coller le décompte par fonction.
+
 -- ============================== APRÈS (à relancer après chaque migration, comparer à AVANT) ==============================
 
--- A1. Migrations index (3/6) : les index créés sont valides.
+-- A1. Étapes 5 à 7 (index) : les index créés sont valides.
 select t.relname as table_name, c.relname as index_name, x.indisvalid
   from pg_index x
   join pg_class c on c.oid = x.indexrelid
@@ -144,8 +186,8 @@ select t.relname as table_name, c.relname as index_name, x.indisvalid
  order by 1, 2;   -- attendu : 27 lignes, indisvalid = true
 select indexrelid::regclass::text as index_invalide from pg_index where not indisvalid;   -- attendu : 0 ligne
 
--- A2. Migration RLS (2/6) : relancer C3 (attendu : 30 politiques, auth_uid_nu = false partout).
--- A3. Migration CHECK (6/6) : les 10 contraintes sont NOT VALID (convalidated = false) ; après la validation différée, true.
+-- A2. Étapes 2 à 4 (RLS) : relancer C3 (attendu : 30 politiques, auth_uid_nu = false partout).
+-- A3. Étape 9 (CHECK) : les 10 contraintes sont NOT VALID (convalidated = false) ; après la validation différée, true.
 select conrelid::regclass::text as table_name, conname, convalidated
   from pg_constraint
  where contype = 'c' and connamespace = 'public'::regnamespace
@@ -155,6 +197,6 @@ select conrelid::regclass::text as table_name, conname, convalidated
                    'character_spell_slots_counts_nonnegative', 'character_pact_slots_counts_nonnegative',
                    'character_feature_uses_remaining_nonnegative')
  order by 1, 2;
--- A4. Migration droits (5/6) : relancer C7 et C8.
--- A5. Migration trigger (1/6) : relancer C9 (attendu : characters_set_updated_at, enabled = 'O') ; puis, après quelques jours d'usage, C10
+-- A4. Étape 8 (droits) : relancer C7 et C8.
+-- A5. Étape 1 (trigger) : relancer C9 (attendu : characters_set_updated_at, enabled = 'O') ; puis, après quelques jours d'usage, C10
 --     (updated_at_egal_created_at doit diminuer au fil des modifications des joueurs).

@@ -21,7 +21,7 @@ set -u
 [ -n "${PGBIN:-}" ] && export PATH="$PGBIN:$PATH"
 export PGCLIENTENCODING=UTF8
 # Sécurité : jamais de base distante. Aucun mot de passe/service hérité de l'environnement, hôte local obligatoire.
-unset PGPASSWORD PGSERVICE PGSERVICEFILE PGPASSFILE PGSSLMODE PGSSLROOTCERT DATABASE_URL
+unset PGPASSWORD PGSERVICE PGSERVICEFILE PGPASSFILE PGSSLMODE PGSSLROOTCERT DATABASE_URL PGHOSTADDR PGOPTIONS
 H="${PGHOST:-127.0.0.1}"; PT="${PGPORT:-54999}"
 case "$H" in
   127.0.0.1|localhost) ;;
@@ -31,6 +31,8 @@ ERR_FILE="$(mktemp 2>/dev/null || echo "${TMPDIR:-.}/jetable_err.$$")"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PSQL="psql -X -h $H -p $PT -U postgres"
 cmd="$1"; shift
+# Le nom de base est interpolé dans un `drop database` : lettres minuscules, chiffres et _ uniquement.
+case "${1:-}" in ""|*[!a-z0-9_]*) echo "REFUS : nom de base invalide « ${1:-} » (attendu : ^[a-z0-9_]+\$)."; exit 1 ;; esac
 
 case "$cmd" in
   replay)

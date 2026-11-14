@@ -1,5 +1,5 @@
--- Phase 0, étape 2 : non-régression de la réécriture `auth.uid()` -> `(select auth.uid())` des
--- politiques RLS (20261115091000_phase0_rls_auth_uid_initplan.sql).
+-- Phase 0, étapes 2 à 4 sur 9 (trois fichiers RLS) : non-régression de la réécriture `auth.uid()` -> `(select auth.uid())` des
+-- politiques RLS (20261115091000, 091100 et 091200_phase0_rls_auth_uid_initplan_*.sql).
 --
 -- Les valeurs attendues ont été MESURÉES AVANT la migration (état de `main`, 157 migrations) puis
 -- vérifiées identiques APRÈS (diff nul de scripts/phase0/rls_matrix.sql sur les deux schémas) : ce

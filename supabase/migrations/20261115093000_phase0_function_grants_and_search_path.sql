@@ -1,4 +1,4 @@
--- Phase 0 « hygiène invisible » (étape 5/6) : droits EXECUTE explicites et `pg_temp` en dernier
+-- Phase 0 « hygiène invisible » (étape 8/9) : droits EXECUTE explicites et `pg_temp` en dernier
 -- dans le `search_path` des fonctions `security definer`.
 --
 -- POURQUOI
@@ -16,11 +16,14 @@
 --   - Edge functions : `service_role`, dont EXECUTE est conservé. App web (apps/, packages/) : aucun appel rpc().
 --
 -- GARDE-FOU (la migration échoue proprement, SANS RIEN RÉVOQUER, si la production contient un appelant que le dépôt ne montre pas)
---   Avant tout REVOKE, exception (avec la liste des objets) si l'une des 16 fonctions concernées est référencée par :
---     - une politique RLS de N'IMPORTE QUEL schéma (storage inclus) dont les rôles incluent `public` ou `anon` (ou sans clause TO) ;
---     - une vue ou vue matérialisée (hors catalogues) ; un défaut de colonne / colonne générée ; une contrainte CHECK ;
---     - une fonction NON `security definer` exécutable par `anon` (hors les 16 fonctions elles-mêmes, qui perdent anon).
---   La même vérification existe en lecture seule dans scripts/phase0/controles_lecture_seule.sql (requête C11) : à lancer AVANT.
+--   Passage 1 (les 16 fonctions, appelants anon/public) : exception (liste des objets) si l'une d'elles est référencée par une politique RLS de
+--   N'IMPORTE QUEL schéma (storage inclus) dont les rôles incluent `public` ou `anon` (ou sans clause TO), une vue ou vue matérialisée, un défaut
+--   de colonne / colonne générée, une contrainte CHECK, ou une fonction non `security definer` exécutable par `anon` (ou de type trigger).
+--   Passage 2 (les 6 fonctions de la liste B, qui perdent AUSSI `authenticated`) : mêmes recherches SANS filtre de rôle (politiques de tout rôle,
+--   toute fonction invoker), car un appel par un connecté serait lui aussi cassé.
+--   Non inspectés (documenté) : expressions d'index, clauses WHEN de triggers, règles (pg_rewrite), triggers d'événement, hooks d'authentification
+--   et jobs pg_cron (à vérifier à la main : voir la PR, étape 0), clients hors dépôt appelant /rest/v1/rpc (logs API de la PR).
+--   La même vérification existe en lecture seule dans scripts/phase0/controles_lecture_seule.sql (requêtes C11 et C11b) : à lancer AVANT.
 --   Les écarts de décompte (production avec objets hors dépôt) ne font PAS échouer : ils sont signalés par NOTICE/WARNING.
 --
 -- EFFET
@@ -44,6 +47,15 @@
 --   alter function <signature> set search_path = public;           -- C
 
 set local lock_timeout = '10s';
+
+do $lt$
+begin
+  raise notice 'lock_timeout=%', current_setting('lock_timeout');
+  if current_setting('lock_timeout') <> '10s' then
+    raise exception 'lock_timeout=% (attendu 10s) : cette migration doit s''exécuter dans UNE transaction (connexion directe ou pooler en mode session ; jamais l''éditeur du tableau de bord sans avoir vu ce NOTICE, ni le pooler en mode transaction)', current_setting('lock_timeout');
+  end if;
+end
+$lt$;
 
 do $phase0$
 declare
@@ -78,6 +90,9 @@ declare
     'trg_refresh_proposal_counts'
   ];
   v_names text[];
+  v_excl oid[];
+  v_pass int;
+  v_label text;
   v_re text;
   v_found text := '';
   r record;
@@ -86,51 +101,69 @@ declare
   v_c_n int := 0;
   v_c_skipped text := '';
 begin
-  -- ---------- Garde-fou : appelants anonymes/publics des 16 fonctions ----------
-  v_names := array(select split_part(split_part(s, '(', 1), '.', 2) from unnest(v_a || v_b) s);
-  v_re := '\m(' || array_to_string(v_names, '|') || ')\M';
+  -- ---------- Garde-fou, deux passages (aucun REVOKE n'a encore eu lieu) ----------
+  --   Passage 1 : les 16 fonctions (A et B perdent anon/public) ; on cherche les appelants ANONYMES/PUBLICS.
+  --   Passage 2 : les 6 fonctions de la liste B (qui perdent AUSSI authenticated) ; on cherche TOUT appelant, SANS filtre de rôle.
+  for v_pass in 1 .. 2 loop
+    if v_pass = 1 then
+      v_names := array(select split_part(split_part(s, '(', 1), '.', 2) from unnest(v_a || v_b) s);
+      v_excl := array(select to_regprocedure(s)::oid from unnest(v_a || v_b) s where to_regprocedure(s) is not null);
+    else
+      v_names := array(select split_part(split_part(s, '(', 1), '.', 2) from unnest(v_b) s);
+      v_excl := array(select to_regprocedure(s)::oid from unnest(v_b) s where to_regprocedure(s) is not null);
+    end if;
+    v_re := '\m(' || array_to_string(v_names, '|') || ')\M';
+    v_label := case when v_pass = 1 then '[passage 1, appelants anon/public des 16 fonctions] '
+                    else '[passage 2, tout appelant des 6 fonctions internes, sans filtre de rôle] ' end;
 
-  for r in
-    select schemaname || '.' || tablename || ' : politique « ' || policyname || ' » (rôles ' || roles::text || ')' as obj
-      from pg_policies
-     where (roles && array['public', 'anon']::name[])
-       and (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ~ v_re
-  loop v_found := v_found || E'\n  - ' || r.obj; end loop;
+    -- Politiques RLS de TOUT schéma (storage inclus). Passage 1 : rôles public/anon (ou sans TO) ; passage 2 : tous les rôles.
+    for r in
+      select schemaname || '.' || tablename || ' : politique « ' || policyname || ' » (rôles ' || roles::text || ')' as obj
+        from pg_policies
+       where (v_pass = 2 or roles && array['public', 'anon']::name[])
+         and (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ~ v_re
+    loop v_found := v_found || E'\n  - ' || v_label || r.obj; end loop;
 
-  for r in
-    select 'vue ' || schemaname || '.' || viewname as obj from pg_views
-     where schemaname not in ('pg_catalog', 'information_schema') and definition ~ v_re
-    union all
-    select 'vue matérialisée ' || schemaname || '.' || matviewname from pg_matviews
-     where schemaname not in ('pg_catalog', 'information_schema') and definition ~ v_re
-  loop v_found := v_found || E'\n  - ' || r.obj; end loop;
+    -- Vues et vues matérialisées (hors catalogues).
+    for r in
+      select 'vue ' || schemaname || '.' || viewname as obj from pg_views
+       where schemaname not in ('pg_catalog', 'information_schema') and definition ~ v_re
+      union all
+      select 'vue matérialisée ' || schemaname || '.' || matviewname from pg_matviews
+       where schemaname not in ('pg_catalog', 'information_schema') and definition ~ v_re
+    loop v_found := v_found || E'\n  - ' || v_label || r.obj; end loop;
 
-  for r in
-    select 'défaut/colonne générée ' || c.oid::regclass::text || '.' || a.attname as obj
-      from pg_attrdef d
-      join pg_class c on c.oid = d.adrelid
-      join pg_attribute a on a.attrelid = d.adrelid and a.attnum = d.adnum
-     where c.relnamespace not in ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
-       and pg_get_expr(d.adbin, d.adrelid) ~ v_re
-  loop v_found := v_found || E'\n  - ' || r.obj; end loop;
+    -- Défauts de colonne et colonnes générées.
+    for r in
+      select 'défaut/colonne générée ' || c.oid::regclass::text || '.' || a.attname as obj
+        from pg_attrdef d
+        join pg_class c on c.oid = d.adrelid
+        join pg_attribute a on a.attrelid = d.adrelid and a.attnum = d.adnum
+       where c.relnamespace not in ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
+         and pg_get_expr(d.adbin, d.adrelid) ~ v_re
+    loop v_found := v_found || E'\n  - ' || v_label || r.obj; end loop;
 
-  for r in
-    select 'contrainte CHECK ' || conrelid::regclass::text || '.' || conname as obj from pg_constraint
-     where contype = 'c' and pg_get_constraintdef(oid) ~ v_re
-  loop v_found := v_found || E'\n  - ' || r.obj; end loop;
+    -- Contraintes CHECK.
+    for r in
+      select 'contrainte CHECK ' || conrelid::regclass::text || '.' || conname as obj from pg_constraint
+       where contype = 'c' and pg_get_constraintdef(oid) ~ v_re
+    loop v_found := v_found || E'\n  - ' || v_label || r.obj; end loop;
 
-  for r in
-    select 'fonction non security definer exécutable par anon : ' || p.oid::regprocedure::text as obj
-      from pg_proc p
-     where p.prokind = 'f' and not p.prosecdef
-       and p.pronamespace not in ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
-       and p.prosrc ~ v_re
-       and p.oid::regprocedure::text <> all (select to_regprocedure(s)::text from unnest(v_a || v_b) s where to_regprocedure(s) is not null)
-       and has_function_privilege('anon', p.oid, 'execute')
-  loop v_found := v_found || E'\n  - ' || r.obj; end loop;
+    -- Fonctions NON security definer qui y font référence. Passage 1 : exécutables par anon OU fonctions de trigger (on sur-signale) ;
+    -- passage 2 : toutes, sans condition de rôle. Les fonctions des listes elles-mêmes sont exclues.
+    for r in
+      select 'fonction non security definer : ' || p.oid::regprocedure::text as obj
+        from pg_proc p
+       where p.prokind = 'f' and not p.prosecdef
+         and p.pronamespace not in ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
+         and p.prosrc ~ v_re
+         and p.oid <> all (v_excl)
+         and (v_pass = 2 or has_function_privilege('anon', p.oid, 'execute') or p.prorettype = 'trigger'::regtype)
+    loop v_found := v_found || E'\n  - ' || v_label || r.obj; end loop;
+  end loop;
 
   if v_found <> '' then
-    raise exception 'phase0 droits : des appelants anonymes/publics référencent les fonctions dont EXECUTE serait retiré, AUCUN droit modifié. Objets :%', v_found;
+    raise exception 'phase0 droits : des appelants référencent les fonctions dont EXECUTE serait retiré, AUCUN droit modifié. Objets :%', v_found;
   end if;
 
   -- ---------- A. Appelables par les connectés (et service_role), plus par anon/public ----------

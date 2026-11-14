@@ -1,4 +1,4 @@
--- Phase 0, étape 5 : trigger `characters_set_updated_at` (20261115090000_phase0_characters_updated_at_trigger.sql).
+-- Phase 0, étape 1/9 : trigger `characters_set_updated_at` (20261115090000_phase0_characters_updated_at_trigger.sql).
 --
 -- Couvre : la colonne est mise à jour par un UPDATE réel (sous le rôle `authenticated`, comme le mobile) ; un UPDATE
 -- sans changement la laisse intacte ; une valeur `updated_at` envoyée par le client est ignorée ; les autres personnages

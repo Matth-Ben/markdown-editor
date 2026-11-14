@@ -1,4 +1,4 @@
--- Phase 0 (étape 6b, DIFFÉRÉE) : validation des 10 contraintes CHECK ajoutées en NOT VALID par
+-- Phase 0 (étape DIFFÉRÉE, après la 9/9) : validation des 10 contraintes CHECK ajoutées en NOT VALID par
 -- 20261115094000_phase0_add_not_valid_checks.sql.
 --
 -- CE FICHIER N'EST VOLONTAIREMENT PAS DANS supabase/migrations/ : `db push` appliquerait toutes les migrations en attente d'un coup.
@@ -19,6 +19,15 @@
 -- (voir la migration 20261115094000).
 
 set local lock_timeout = '10s';
+
+do $lt$
+begin
+  raise notice 'lock_timeout=%', current_setting('lock_timeout');
+  if current_setting('lock_timeout') <> '10s' then
+    raise exception 'lock_timeout=% (attendu 10s) : cette migration doit s''exécuter dans UNE transaction (connexion directe ou pooler en mode session ; jamais l''éditeur du tableau de bord sans avoir vu ce NOTICE, ni le pooler en mode transaction)', current_setting('lock_timeout');
+  end if;
+end
+$lt$;
 
 do $phase0$
 declare

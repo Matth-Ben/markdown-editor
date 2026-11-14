@@ -1,4 +1,4 @@
--- Phase 0, étape 1 : index manquants sur clés étrangères (20261115092000/092100/092200_phase0_add_fk_indexes_*.sql, 3 fichiers).
+-- Phase 0, étapes 5 à 7 sur 9 : index manquants sur clés étrangères (trois fichiers 20261115092000, 092100 et 092200_phase0_add_fk_indexes_*.sql).
 --
 -- Couvre : les 27 index existent, sont valides, non partiels, sur les bonnes colonnes ; aucun n'est redondant
 -- (aucun autre index non partiel de la même table n'a exactement les mêmes colonnes) ; toutes les clés

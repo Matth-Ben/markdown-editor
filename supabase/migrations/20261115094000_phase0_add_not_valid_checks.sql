@@ -1,4 +1,4 @@
--- Phase 0 « hygiène invisible » (étape 6/6) : contraintes CHECK manquantes, ajoutées `NOT VALID`.
+-- Phase 0 « hygiène invisible » (étape 9/9) : contraintes CHECK manquantes, ajoutées `NOT VALID`.
 --
 -- POURQUOI
 --   Aucune contrainte de valeur n'existe sur les compteurs : PV, PV temporaires, XP et monnaies de `characters`, trésor du groupe,
@@ -22,13 +22,25 @@
 --   Non ajouté (règles à trancher par regles-dnd ou recalculs transitoires) : current_hp <= max_hp, max_hp >= 0, slots_used <= slots_total,
 --   plafond de niveau.
 --
--- RISQUE : verrou SHARE ROW EXCLUSIVE très bref par table (pas de parcours d'écriture) ; le comptage des violations lit chaque table une
---   fois (lecture seule). `lock_timeout` 10 s. Si un client écrit plus tard une valeur hors borne, l'écriture est refusée (23514) au lieu
+-- RISQUE : `ADD CONSTRAINT ... CHECK ... NOT VALID` prend un verrou ACCESS EXCLUSIVE sur la table : bref (aucun parcours des lignes), mais tenu
+--   jusqu'au commit de la migration ; `lock_timeout` 10 s ; appliquer hors pic et sans transaction longue en cours (pg_stat_activity). Le comptage
+--   des violations lit chaque table une fois (lecture seule) SANS verrou qui bloque les écritures : une ligne fautive écrite entre le comptage et
+--   l'ajout n'est pas exclue (documenté ; un verrou SHARE ROW EXCLUSIVE préalable ne serait à ajouter que si les tables restent petites).
+--   Non inspectés par la détection d'équivalence : expressions d'index, clauses WHEN de triggers, règles. Si un client écrit plus tard une valeur hors borne, l'écriture est refusée (23514) au lieu
 --   d'être acceptée en silence : comportement voulu, à connaître côté mobile (file hors ligne).
 --
 -- RETOUR ARRIÈRE : alter table <t> drop constraint if exists <nom>; pour chaque nom listé dans `v_checks` ci-dessous.
 
 set local lock_timeout = '10s';
+
+do $lt$
+begin
+  raise notice 'lock_timeout=%', current_setting('lock_timeout');
+  if current_setting('lock_timeout') <> '10s' then
+    raise exception 'lock_timeout=% (attendu 10s) : cette migration doit s''exécuter dans UNE transaction (connexion directe ou pooler en mode session ; jamais l''éditeur du tableau de bord sans avoir vu ce NOTICE, ni le pooler en mode transaction)', current_setting('lock_timeout');
+  end if;
+end
+$lt$;
 
 do $phase0$
 declare
@@ -71,13 +83,14 @@ begin
       continue;
     end if;
 
-    v_norm := 'check' || lower(regexp_replace(v_checks[v_i][3], '[\s()]', '', 'g'));
+    -- Normalisation : minuscules, sans « NOT VALID » final, sans conversions de type (::text, ::integer...), sans espaces ni parenthèses.
+    v_norm := 'check' || regexp_replace(regexp_replace(lower(v_checks[v_i][3]), '::[a-z_]+', '', 'g'), '[\s()]', '', 'g');
     select c.conname into v_found
       from pg_constraint c
      where c.conrelid = format('public.%I', v_checks[v_i][1])::regclass
        and c.contype = 'c'
        and (c.conname = v_checks[v_i][2]
-            or lower(regexp_replace(pg_get_constraintdef(c.oid), '[\s()]', '', 'g')) = v_norm)
+            or regexp_replace(regexp_replace(regexp_replace(lower(pg_get_constraintdef(c.oid)), '\s+not\s+valid\s*$', ''), '::[a-z_]+', '', 'g'), '[\s()]', '', 'g') = v_norm)
      limit 1;
 
     if v_found is not null then

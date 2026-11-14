@@ -1,4 +1,4 @@
--- Phase 0, étape 3 : contraintes CHECK `NOT VALID` (20261115094000_phase0_add_not_valid_checks.sql)
+-- Phase 0, étape 9/9 : contraintes CHECK `NOT VALID` (20261115094000_phase0_add_not_valid_checks.sql)
 -- et leur validation différée (supabase/deferred/20261115100000_phase0_validate_checks.sql).
 --
 -- Couvre : présence et statut « non validée » des 10 contraintes ; refus (SQLSTATE 23514) d'une valeur

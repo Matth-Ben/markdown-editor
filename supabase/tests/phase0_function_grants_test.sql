@@ -1,4 +1,4 @@
--- Phase 0, étape 4 : droits EXECUTE explicites et `pg_temp` en dernier dans le search_path
+-- Phase 0, étape 8/9 : droits EXECUTE explicites et `pg_temp` en dernier dans le search_path
 -- (20261115093000_phase0_function_grants_and_search_path.sql).
 --
 -- Couvre : pour chaque fonction du groupe A (helpers de RLS et RPC réservées aux connectés) anon et PUBLIC n'ont

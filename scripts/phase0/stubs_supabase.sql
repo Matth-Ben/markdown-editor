@@ -23,6 +23,7 @@ alter table storage.objects enable row level security;
 create function storage.foldername(name text) returns text[] language sql as $$ select string_to_array(name,'/') $$;
 create view vault.decrypted_secrets as select 'x'::text as name, 'x'::text as decrypted_secret;
 create function vault.create_secret(a text, b text default null, c text default null) returns uuid language sql as $$ select gen_random_uuid() $$;
+create table if not exists cron.job(jobid bigserial primary key, username text, command text);
 create function cron.schedule(a text, b text, c text) returns bigint language sql as $$ select 1::bigint $$;
 create function net.http_post(url text, body jsonb default null, headers jsonb default null, params jsonb default null, timeout_milliseconds int default 1000) returns bigint language sql as $$ select 1::bigint $$;
 create publication supabase_realtime;

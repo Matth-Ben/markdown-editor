@@ -1,4 +1,4 @@
--- Phase 0 « hygiène invisible » (étape 3/6, fichier B/3) : index manquants sur clés étrangères — groupes, combat, signalements et liens histoire.
+-- Phase 0 « hygiène invisible » (étape 6/9, fichier 2/3) : index manquants sur clés étrangères — groupes, combat, signalements et liens histoire.
 --
 -- Les 27 index de la phase 0 sont répartis en 3 fichiers (A : tables d'un personnage ; B : groupes, combat, signalements, liens
 -- histoire ; C : tables de référence) : dans une même transaction, chaque `create index` garde son verrou SHARE jusqu'au commit ;
@@ -20,6 +20,15 @@
 -- RETOUR ARRIÈRE (aucune donnée en jeu) : drop index if exists public.<nom>; pour chacun de : group_members_user_id_idx, group_members_character_id_idx, groups_owner_id_idx, group_journal_entries_group_id_user_id_idx, group_journal_entries_user_id_idx, group_notes_user_id_idx, group_notes_character_id_idx, combat_participants_character_id_idx, combat_participants_user_id_idx, combats_started_by_idx, bug_reports_reporter_id_idx, bug_reports_character_id_idx, character_campaigns_story_id_idx
 
 set local lock_timeout = '10s';
+
+do $lt$
+begin
+  raise notice 'lock_timeout=%', current_setting('lock_timeout');
+  if current_setting('lock_timeout') <> '10s' then
+    raise exception 'lock_timeout=% (attendu 10s) : cette migration doit s''exécuter dans UNE transaction (connexion directe ou pooler en mode session ; jamais l''éditeur du tableau de bord sans avoir vu ce NOTICE, ni le pooler en mode transaction)', current_setting('lock_timeout');
+  end if;
+end
+$lt$;
 
 do $phase0$
 declare

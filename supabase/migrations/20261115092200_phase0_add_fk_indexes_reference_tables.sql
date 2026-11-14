@@ -1,4 +1,4 @@
--- Phase 0 « hygiène invisible » (étape 3/6, fichier C/3) : index manquants sur clés étrangères — tables de reference.
+-- Phase 0 « hygiène invisible » (étape 7/9, fichier 3/3) : index manquants sur clés étrangères — tables de reference.
 --
 -- Les 27 index de la phase 0 sont répartis en 3 fichiers (A : tables d'un personnage ; B : groupes, combat, signalements, liens
 -- histoire ; C : tables de référence) : dans une même transaction, chaque `create index` garde son verrou SHARE jusqu'au commit ;
@@ -20,6 +20,15 @@
 -- RETOUR ARRIÈRE (aucune donnée en jeu) : drop index if exists public.<nom>; pour chacun de : class_features_class_id_idx, class_features_subclass_id_idx, spell_classes_class_id_idx
 
 set local lock_timeout = '10s';
+
+do $lt$
+begin
+  raise notice 'lock_timeout=%', current_setting('lock_timeout');
+  if current_setting('lock_timeout') <> '10s' then
+    raise exception 'lock_timeout=% (attendu 10s) : cette migration doit s''exécuter dans UNE transaction (connexion directe ou pooler en mode session ; jamais l''éditeur du tableau de bord sans avoir vu ce NOTICE, ni le pooler en mode transaction)', current_setting('lock_timeout');
+  end if;
+end
+$lt$;
 
 do $phase0$
 declare
