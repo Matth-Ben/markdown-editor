@@ -50,10 +50,10 @@ begin
     raise exception 'phase0 trigger : characters contient une colonne json (sans opérateur d''égalité), migration interrompue';
   end if;
 
-  -- Collision de fonction.
+  -- Collision de fonction (comparaison insensible aux fins de ligne CRLF d'un checkout Windows).
   select prosrc into v_src from pg_proc
    where pronamespace = 'public'::regnamespace and proname = 'characters_touch_updated_at' and pronargs = 0;
-  if found and v_src is distinct from v_expected then
+  if found and replace(v_src, E'', '') is distinct from replace(v_expected, E'', '') then
     raise exception 'phase0 trigger : public.characters_touch_updated_at() existe déjà avec un corps différent, migration interrompue';
   end if;
 
@@ -75,7 +75,7 @@ begin
 
   if v_src is null then
     execute 'create function public.characters_touch_updated_at() returns trigger language plpgsql '
-         || 'set search_path = public, pg_temp as $f$' || v_expected || '$f$';
+         || 'set search_path = public, pg_temp as $f$' || replace(v_expected, E'', '') || '$f$';
   end if;
 end
 $phase0$;
