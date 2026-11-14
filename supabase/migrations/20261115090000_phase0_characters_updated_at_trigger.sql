@@ -53,7 +53,7 @@ begin
   -- Collision de fonction (comparaison insensible aux fins de ligne CRLF d'un checkout Windows).
   select prosrc into v_src from pg_proc
    where pronamespace = 'public'::regnamespace and proname = 'characters_touch_updated_at' and pronargs = 0;
-  if found and replace(v_src, E'', '') is distinct from replace(v_expected, E'', '') then
+  if found and replace(v_src, E'\r', '') is distinct from replace(v_expected, E'\r', '') then
     raise exception 'phase0 trigger : public.characters_touch_updated_at() existe déjà avec un corps différent, migration interrompue';
   end if;
 
@@ -75,7 +75,7 @@ begin
 
   if v_src is null then
     execute 'create function public.characters_touch_updated_at() returns trigger language plpgsql '
-         || 'set search_path = public, pg_temp as $f$' || replace(v_expected, E'', '') || '$f$';
+         || 'set search_path = public, pg_temp as $f$' || replace(v_expected, E'\r', '') || '$f$';
   end if;
 end
 $phase0$;
