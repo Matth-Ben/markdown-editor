@@ -1,10 +1,10 @@
--- Phase 0 « hygiène invisible » (étape 5/9, fichier 1/3) : index manquants sur clés étrangères — tables dun personnage.
+-- Phase 0 « hygiène invisible » (étape 5/9, fichier 1/3) : index manquants sur clés étrangères — tables d'un personnage.
 --
 -- Les 27 index de la phase 0 sont répartis en 3 fichiers (A : tables d'un personnage ; B : groupes, combat, signalements, liens
 -- histoire ; C : tables de référence) : dans une même transaction, chaque `create index` garde son verrou SHARE jusqu'au commit ;
 -- trois transactions plus courtes limitent la durée cumulée pendant laquelle les écritures des tables concernées sont bloquées.
 --
--- POURQUOI : filtre `character_id` (64 usages dans lib/) et `owner_id` (35 usages) : chargement d'une fiche (26 requetes), liste des personnages, politiques RLS, cascades de suppression de personnage.
+-- POURQUOI : filtre `character_id` (64 usages dans lib/) et `owner_id` (35 usages) : chargement d'une fiche (26 requêtes), liste des personnages, politiques RLS, cascades de suppression de personnage.
 -- Les index « partiels » (character_spells_unique_*) et les uniques composites commençant par une autre colonne
 -- (group_members(group_id, user_id)) ne servent pas un filtre sur la seule colonne visée.
 --

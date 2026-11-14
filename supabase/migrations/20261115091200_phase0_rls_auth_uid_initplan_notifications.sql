@@ -27,10 +27,11 @@
 -- Contrôle de non-régression : supabase/tests/phase0_rls_initplan_test.sql et la matrice scripts/phase0/rls_matrix.sql
 -- (mêmes lignes visibles/modifiables pour propriétaire, équipier, MJ, tiers, anonyme, y compris les UPDATE de transfert de propriété).
 --
--- RETOUR ARRIÈRE de CE fichier : exécuter le bloc inverse (remet `auth.uid()` nu ; aucune donnée en jeu ; testé sur le schéma rejoué) :
+-- RETOUR ARRIÈRE de CE fichier : exécuter le bloc inverse (remet `auth.uid()` nu ; aucune donnée en jeu ; testé sur le schéma rejoué ; l'`order by` reproduit l'ordre de verrouillage de la migration) :
 --   do $$ declare r record; begin
 --     for r in select tablename, policyname, qual, with_check from pg_policies
 --              where schemaname = 'public' and tablename in ('notification_preferences', 'user_push_tokens')
+--              order by array_position(array['notification_preferences','user_push_tokens'], tablename::text), policyname
 --     loop
 --       execute format('alter policy %I on public.%I%s%s', r.policyname, r.tablename,
 --         case when r.qual is null then '' else ' using (' ||

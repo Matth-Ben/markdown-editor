@@ -13,10 +13,11 @@
 #   9 CHECK NOT VALID               (puis, plus tard : validation différée, supabase/deferred/)
 #
 # Usage (UNIQUEMENT dans le worktree dédié mj-ph0, jamais dans un dépôt principal) :
-#   scripts/phase0/etape.sh <n> <sha-de-la-pointe>   garde dans migrations/ les étapes 1..n, met les suivantes de côté
-#   scripts/phase0/etape.sh restaurer                remet tous les fichiers en place
+#   bash scripts/phase0/etape.sh <n> <sha-de-la-pointe>   garde dans migrations/ les étapes 1..n, met les suivantes de côté
+#   bash scripts/phase0/etape.sh restaurer                remet tous les fichiers en place
 # <n> = numéro du DERNIER fichier à garder « en attente » (donc le seul non encore appliqué : 1..n-1 le sont déjà en production).
-# <sha-de-la-pointe> = début du sha de la pointe de la branche indiqué dans la PR (le script refuse si HEAD est ailleurs).
+# <sha-de-la-pointe> = début (au moins 7 caractères hexadécimaux) du sha de la pointe de la branche indiqué dans la PR (le script refuse si HEAD est ailleurs).
+# Le dossier supabase/.phase0_attente/ est ajouté à .git/info/exclude, fichier COMMUN à tous les worktrees du dépôt (inoffensif : dossier jamais committé).
 # Le script refuse si l'arbre n'est pas propre (hors fichiers déjà mis de côté par lui) et demande une confirmation explicite.
 # ATTENTION : toujours lancer `restaurer` AVANT tout commit ou changement de branche (sinon les fichiers apparaîtraient supprimés).
 set -eu
@@ -38,17 +39,19 @@ FILES=(
 # Exclusion locale du dossier de mise de côté (jamais committé).
 EXCL="$(git rev-parse --git-path info/exclude)"
 grep -qx 'supabase/.phase0_attente/' "$EXCL" 2>/dev/null || { mkdir -p "$(dirname "$EXCL")"; echo 'supabase/.phase0_attente/' >> "$EXCL"; }
-mkdir -p "$HOLD"
 
 restore() { for f in "${FILES[@]}"; do [ -f "$HOLD/$f" ] && mv "$HOLD/$f" "$MIG/$f"; done; return 0; }
 
 if [ "${1:-}" = "restaurer" ]; then
-  restore; echo "Tout est remis en place."; git status --short; exit 0
+  mkdir -p "$HOLD"; restore; echo "Tout est remis en place."; git status --short; exit 0
 fi
 
 n="${1:?usage: etape.sh <1..9> <sha-de-la-pointe> | restaurer}"
 want="${2:?usage: etape.sh <1..9> <sha-de-la-pointe> | restaurer}"
 case "$n" in [1-9]) ;; *) echo "REFUS : <n> doit être un chiffre de 1 à 9."; exit 1 ;; esac
+case "$want" in *[!0-9a-fA-F]*|"") echo "REFUS : <sha> doit être hexadécimal."; exit 1 ;; esac
+[ "${#want}" -ge 7 ] || { echo "REFUS : <sha> doit faire au moins 7 caractères hexadécimaux."; exit 1; }
+mkdir -p "$HOLD"
 
 # 1. HEAD attendu.
 head="$(git rev-parse HEAD)"

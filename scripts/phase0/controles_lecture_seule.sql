@@ -80,7 +80,9 @@ select p.proname, pg_get_function_identity_arguments(p.oid) as arguments,
                      'on_group_created', 'trg_content_proposals_review', 'trg_refresh_proposal_counts')
  order by 1;
 
--- C8. Fonctions publiques exécutables par anon (Q-SQL-24 ; attendu APRÈS : get_shared_character + les 5 fonctions de colonne calculée).
+-- C8. Fonctions publiques exécutables par anon (Q-SQL-24). Liste TOUTE fonction du schéma public exécutable par anon, y compris d'éventuelles
+--     fonctions d'extension installées dans public. Attendu APRÈS : get_shared_character + 4 fonctions de colonne calculée
+--     (content_proposals_author_name, group_members_display_name, proposal_comments_author_name, stories_gm_display_name).
 select p.proname, p.prosecdef as definer
   from pg_proc p
  where p.pronamespace = 'public'::regnamespace and has_function_privilege('anon', p.oid, 'execute')
@@ -120,7 +122,8 @@ union all select 'contrainte CHECK', conrelid::regclass::text || '.' || conname 
  where contype = 'c' and pg_get_constraintdef(oid) ~ re.r
 union all select 'fonction invoker exécutable par anon', p.oid::regprocedure::text from pg_proc p, re
  where p.prokind = 'f' and not p.prosecdef and p.pronamespace not in ('pg_catalog'::regnamespace, 'information_schema'::regnamespace)
-   and p.prosrc ~ re.r and p.proname not in (select name from f) and has_function_privilege('anon', p.oid, 'execute');
+   and p.prosrc ~ re.r and p.proname not in (select name from f)
+   and (has_function_privilege('anon', p.oid, 'execute') or p.prorettype = 'trigger'::regtype);   -- comme le passage 1 de la migration 8 : fonctions de trigger sur-signalées
 
 -- C12. Collision éventuelle de fonctions/triggers de la migration trigger : voir C9 (attendu AVANT : aucune ligne `characters_touch_updated_at`).
 
@@ -153,6 +156,7 @@ select jobid, username, command from cron.job order by jobid;
 
 -- C15. Hooks d'authentification : tableau de bord Supabase > Authentication > Hooks (vérifier à la main qu'aucun hook ne pointe vers l'une des 16
 --      fonctions du schéma public : `supabase_auth_admin` perdrait EXECUTE avec `revoke from public`). Côté SQL, rôles ayant EXECUTE sur les 16 fonctions :
+-- NB : `pg_get_userbyid(0)` renvoie « unknown (OID=0) » : c'est PUBLIC (grantee 0), pas une anomalie.
 select p.proname, string_agg(distinct pg_get_userbyid(a.grantee), ', ') as roles_executeurs
   from pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
  where p.pronamespace = 'public'::regnamespace and a.privilege_type = 'EXECUTE'

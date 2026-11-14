@@ -1,10 +1,10 @@
--- Phase 0 « hygiène invisible » (étape 7/9, fichier 3/3) : index manquants sur clés étrangères — tables de reference.
+-- Phase 0 « hygiène invisible » (étape 7/9, fichier 3/3) : index manquants sur clés étrangères — tables de référence.
 --
 -- Les 27 index de la phase 0 sont répartis en 3 fichiers (A : tables d'un personnage ; B : groupes, combat, signalements, liens
 -- histoire ; C : tables de référence) : dans une même transaction, chaque `create index` garde son verrou SHARE jusqu'au commit ;
 -- trois transactions plus courtes limitent la durée cumulée pendant laquelle les écritures des tables concernées sont bloquées.
 --
--- POURQUOI : tables de reference tres lues par l'app (28 requetes `class_features`, 3 `spell_classes`) dont les cles etrangeres n'ont aucun index ; petites tables (~1 000 lignes), gain modeste mais risque nul.
+-- POURQUOI : tables de référence très lues par l'app (28 requêtes `class_features`, 3 `spell_classes`) dont les clés étrangères n'ont aucun index ; petites tables (~1 000 lignes), gain modeste mais risque nul.
 -- Les index « partiels » (character_spells_unique_*) et les uniques composites commençant par une autre colonne
 -- (group_members(group_id, user_id)) ne servent pas un filtre sur la seule colonne visée.
 --
