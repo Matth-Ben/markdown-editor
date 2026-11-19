@@ -48,11 +48,20 @@ export type FindGroupResult =
 
 /** Cherche un groupe par invite_code. Utilisé par join-group (avant de
  * vérifier/rattacher un personnage) et preview-group-invite (qui s'arrête
- * là). `admin` doit être un client service_role : invite_code n'est jamais
- * lisible via une policy select cliente (20260906182601_create_groups.sql,
- * "Pas de policy INSERT pour authenticated"). Contrairement à
- * findJoinableStory, aucune notion de désactivation -- un groupe créé a
- * toujours un code actif, voir le commentaire d'en-tête. */
+ * là). `admin` doit être un client service_role : l'appelant n'est pas
+ * encore membre du groupe, et les policies SELECT de `groups` ne donnent la
+ * ligne qu'à son propriétaire et à ses membres ("Owner can select their
+ * groups", "Member can select their groups", 20260906182601_create_groups.sql).
+ * invite_code n'est donc pas lisible par un non-membre ; il l'est en
+ * revanche par TOUT membre (la policy membre donne la ligne entière, Nexus
+ * et Grimoire l'affichent) : c'est voulu, les membres peuvent partager le
+ * code (décision de Matthias du 15/11/2026, dette D227 du dépôt mobile).
+ * Seules id, name et owner_id sont lues ici, et les appelants ne renvoient
+ * que le nom (plus l'id pour join-group) : ni invite_code, ni
+ * story_title/story_summary_public (20261119120000) ne sont montrés à un
+ * non-membre.
+ * Contrairement à findJoinableStory, aucune notion de désactivation -- un
+ * groupe créé a toujours un code actif, voir le commentaire d'en-tête. */
 export async function findJoinableGroup(
   admin: SupabaseClient,
   code: string,
