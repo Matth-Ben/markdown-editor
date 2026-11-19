@@ -2,8 +2,9 @@
 -- (étape 4 de FEUILLE-DE-ROUTE.md). Même patron que group_game_master_combat_guard_test.sql.
 --
 -- Couvre : schéma (colonnes text nullables sans défaut, 4 contraintes validées, politiques de `groups` inchangées, aucun
--- trigger UPDATE) ; limites (200 et 500 caractères, comptés en caractères et non en octets ; chaîne vide ou blanche refusée ;
--- espaces de bord conservés ; retours à la ligne admis ; NULL accepté) ; écriture : propriétaire accepté (y compris parti de
+-- trigger UPDATE, classe de blancs indépendante de la collation : C, libc UTF-8, ICU) ; limites (200 et 500 caractères,
+-- comptés en caractères et non en octets, y compris hors plan de base ; chaîne vide ou blanche refusée, dont U+00A0, U+202F
+-- et U+200B ; espaces de bord conservés ; retours à la ligne admis ; NULL accepté) ; écriture : propriétaire accepté (y compris parti de
 -- son groupe), membre, MJ non propriétaire, tiers, propriétaire d'un autre groupe et anonyme sans effet, insertion directe
 -- refusée ; lecture : propriétaire, membre et MJ oui, tiers et anonyme non ; non-régression : renommage et nouveau code
 -- (Nexus, Grimoire), création et rollback à la create-group, résolution d'un code à la preview-group-invite, suppression du
@@ -14,7 +15,7 @@
 
 begin;
 
-select plan(52);
+select plan(63);
 
 -- Fixtures (insérées en tant que postgres, qui contourne RLS) ---------------------------------------------------------------
 -- u01 Olga : propriétaire de G1, y joue C01          u02 Bran : membre de G1 (C02)
@@ -103,6 +104,71 @@ select is(
   'Aucun trigger UPDATE sur groups (aucune normalisation cachée)'
 );
 
+-- Indépendance vis-à-vis de la locale : la classe de blancs réellement posée sur groups_story_title_not_blank (et la même
+-- sur le résumé) est évaluée sous chaque collation disponible parmi C, POSIX, C.utf8, en_US.utf8 (libc) et und-x-icu,
+-- fr-FR-x-icu (ICU) : les 28 blancs de la classe sont refusés et des caractères ordinaires acceptés, partout.
+do $$
+declare
+  v_title_class text;
+  v_summary_class text;
+  v_coll record;
+  v_cp int;
+  v_match boolean;
+  v_blank_ok int := 0;
+  v_text_ko int := 0;
+  v_tested int := 0;
+  v_libc_utf8 int := 0;
+  v_icu int := 0;
+begin
+  select substring(pg_get_constraintdef(oid) from $re$~ '(.*)'::text$re$) into v_title_class
+    from pg_constraint where conrelid = 'public.groups'::regclass and conname = 'groups_story_title_not_blank';
+  select substring(pg_get_constraintdef(oid) from $re$~ '(.*)'::text$re$) into v_summary_class
+    from pg_constraint where conrelid = 'public.groups'::regclass and conname = 'groups_story_summary_public_not_blank';
+  insert into probe (k, n) values ('same_class', case when v_title_class = v_summary_class then 1 else 0 end);
+
+  for v_coll in
+    select collname, collprovider from pg_collation
+     where collname in ('C', 'POSIX', 'C.utf8', 'en_US.utf8', 'und-x-icu', 'fr-FR-x-icu')
+       and collencoding in (-1, pg_char_to_encoding(current_setting('server_encoding')))
+  loop
+    v_tested := v_tested + 1;
+    if v_coll.collprovider = 'c' and v_coll.collname not in ('C', 'POSIX') then v_libc_utf8 := v_libc_utf8 + 1; end if;
+    if v_coll.collprovider = 'i' then v_icu := v_icu + 1; end if;
+    for v_cp in
+      select unnest(array[9, 10, 11, 12, 13, 32, 133, 160, 5760, 8232, 8233, 8239, 8287, 8288, 12288, 65279])
+      union all select generate_series(8192, 8203)
+    loop
+      execute format('select ($1 collate %I) ~ $2', v_coll.collname) into v_match using repeat(chr(v_cp), 3), v_title_class;
+      if v_match then v_blank_ok := v_blank_ok + 1; end if;
+    end loop;
+    for v_cp in select unnest(array[97, 233, 48, 45, 128009]) loop
+      execute format('select ($1 collate %I) ~ $2', v_coll.collname) into v_match using chr(8239) || chr(v_cp) || chr(160), v_title_class;
+      if not v_match then v_text_ko := v_text_ko + 1; end if;
+    end loop;
+  end loop;
+
+  insert into probe (k, n) values
+    ('blank_ok', v_blank_ok), ('text_ko', v_text_ko),
+    ('coll_ok', case when v_tested >= 3 and v_libc_utf8 >= 1 and v_icu >= 1 then 1 else 0 end);
+end
+$$;
+
+select is(
+  (select n from probe where k = 'same_class') + (select n from probe where k = 'coll_ok'),
+  2,
+  'Classe de blancs : identique pour le titre et le résumé, éprouvée sous au moins une collation libc UTF-8 et une ICU'
+);
+select is(
+  (select n from probe where k = 'blank_ok'),
+  0,
+  'Classe de blancs : aucun des 28 blancs (dont U+00A0, U+2007, U+200B, U+202F) accepté, sous aucune collation'
+);
+select is(
+  (select n from probe where k = 'text_ko'),
+  0,
+  'Classe de blancs : un caractère ordinaire entouré de blancs est accepté sous toutes les collations'
+);
+
 -- Limites (en tant que propriétaire : ce que reçoit un client) ----------------------------------------------------------------
 
 set local role authenticated;
@@ -163,6 +229,47 @@ select throws_ok(
   $$ update public.groups set story_title = repeat(chr(128009), 201) where id = 'e2000000-0000-4000-8000-000000000001' $$,
   '23514', 'new row for relation "groups" violates check constraint "groups_story_title_max_length"',
   'Titre de 201 caractères hors plan de base refusé'
+);
+select lives_ok(
+  $$ update public.groups set story_summary_public = repeat(chr(128009), 500) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  'Résumé de 500 caractères hors plan de base (2 000 octets, 1 000 unités UTF-16) accepté'
+);
+select throws_ok(
+  $$ update public.groups set story_summary_public = repeat(chr(128009), 501) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  '23514', 'new row for relation "groups" violates check constraint "groups_story_summary_public_max_length"',
+  'Résumé de 501 caractères hors plan de base refusé'
+);
+
+-- Blancs Unicode que `\S` laisse passer selon la locale (U+00A0, U+202F sous libc) ou partout (U+200B).
+select throws_ok(
+  $$ update public.groups set story_title = repeat(chr(160), 3) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  '23514', 'new row for relation "groups" violates check constraint "groups_story_title_not_blank"',
+  'Titre fait d''espaces insécables (U+00A0) refusé'
+);
+select throws_ok(
+  $$ update public.groups set story_title = repeat(chr(8239), 3) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  '23514', 'new row for relation "groups" violates check constraint "groups_story_title_not_blank"',
+  'Titre fait d''espaces fines insécables (U+202F) refusé'
+);
+select throws_ok(
+  $$ update public.groups set story_title = repeat(chr(8203), 3) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  '23514', 'new row for relation "groups" violates check constraint "groups_story_title_not_blank"',
+  'Titre fait d''espaces sans chasse (U+200B) refusé'
+);
+select throws_ok(
+  $$ update public.groups set story_summary_public = repeat(chr(160), 3) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  '23514', 'new row for relation "groups" violates check constraint "groups_story_summary_public_not_blank"',
+  'Résumé fait d''espaces insécables (U+00A0) refusé'
+);
+select throws_ok(
+  $$ update public.groups set story_summary_public = repeat(chr(8239), 3) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  '23514', 'new row for relation "groups" violates check constraint "groups_story_summary_public_not_blank"',
+  'Résumé fait d''espaces fines insécables (U+202F) refusé'
+);
+select throws_ok(
+  $$ update public.groups set story_summary_public = repeat(chr(8203), 3) where id = 'e2000000-0000-4000-8000-000000000001' $$,
+  '23514', 'new row for relation "groups" violates check constraint "groups_story_summary_public_not_blank"',
+  'Résumé fait d''espaces sans chasse (U+200B) refusé'
 );
 
 update public.groups set story_title = '  Titre avec espaces  ', story_summary_public = E'Ligne 1\nLigne 2'
