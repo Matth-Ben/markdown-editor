@@ -17,7 +17,15 @@
 //
 // Contrat : POST { code: string }, authentifié (même exigence que
 // join-group/create-group).
-//   200 { name, member_count }
+//   200 { name, member_count, story_title }
+//       story_title : titre de la campagne associée au groupe (string), ou
+//       null si aucune ; montré AVANT l'adhésion (décision n° 33 du
+//       19/11/2026, migration 20261119120000). Jamais story_summary_public
+//       (réservé aux membres), jamais invite_code. Champ ajouté : un client
+//       qui ne le lit pas (Nexus publié lit name et member_count par clé,
+//       group_repository.dart previewGroupInvite) n'est pas affecté.
+//       Déployer cette fonction APRÈS la migration 20261119120000 : sans la
+//       colonne, la lecture échoue et l'aperçu renvoie 500 à tout le monde.
 //   404 { error: "invalid_code" }
 //   401 { error: "unauthorized" }
 //   400 { error: "invalid_body" }
@@ -30,7 +38,7 @@ import {
   authenticateRequest,
   corsHeaders,
   createAdminClient,
-  findJoinableGroup,
+  findGroupPreviewByInviteCode,
   jsonResponse,
   readEnvConfig,
 } from "../_shared/group-invite.ts";
@@ -80,7 +88,8 @@ Deno.serve(async (req: Request) => {
 
   const admin = createAdminClient(config);
 
-  const groupResult = await findJoinableGroup(admin, code);
+  // Lit aussi story_title (décision n° 33) : dépend de 20261119120000.
+  const groupResult = await findGroupPreviewByInviteCode(admin, code);
   if ("errorResponse" in groupResult) return groupResult.errorResponse;
   const { group } = groupResult;
 
@@ -97,5 +106,9 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "internal_error", message: "Erreur serveur." }, 500);
   }
 
-  return jsonResponse({ name: group.name, member_count: count ?? 0 });
+  return jsonResponse({
+    name: group.name,
+    member_count: count ?? 0,
+    story_title: group.story_title ?? null,
+  });
 });
