@@ -411,7 +411,7 @@ reset role;
 select throws_ok(
   $$ delete from public.groups where id = 'f2000000-0000-4000-8000-000000000001' $$,
   'P0001', 'combat_active',
-  'Combat actif : refus même en superutilisateur (postgres)'
+  'Combat actif : refus même pour le rôle postgres (propriétaire des tables)'
 );
 select is(
   (select count(*)::int from public.group_members
