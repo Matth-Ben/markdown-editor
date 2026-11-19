@@ -403,8 +403,14 @@ select lives_ok(
   'Après la fin du précédent, un nouveau combat peut être lancé'
 );
 reset role;
+-- État hérité « MJ parti pendant un combat actif » : impossible à produire depuis
+-- 20261119090000_become_group_game_master_and_combat_active_guard.sql (départ du propriétaire refusé, combat_active), mais
+-- possible dans les données antérieures. Reproduit en désactivant ce seul garde-fou le temps de la suppression (transaction
+-- de test annulée) pour garder la couverture de gm_absent ; le refus lui-même est testé dans group_game_master_combat_guard_test.sql.
+alter table public.group_members disable trigger group_members_before_delete_combat_guard;
 delete from public.group_members
  where group_id = 'd0000000-0000-0000-0000-000000000001' and user_id = 'c0000000-0000-0000-0000-000000000001';
+alter table public.group_members enable trigger group_members_before_delete_combat_guard;
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 select is(

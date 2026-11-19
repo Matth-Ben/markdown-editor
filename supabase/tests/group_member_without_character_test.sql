@@ -40,21 +40,27 @@ values
   ('99999999-9999-9999-9999-999999999992', '77777777-7777-7777-7777-777777777773', 'pgTAP Group Hero 2');
 
 -- Le MJ rejoint son propre groupe sans personnage (character_id = null),
--- comme le ferait désormais create-group pour un créateur sans personnage.
-insert into public.group_members (group_id, character_id, user_id, role)
-values ('88888888-8888-8888-8888-888888888881', null, '77777777-7777-7777-7777-777777777771', 'owner');
+-- comme le ferait désormais create-group pour un créateur sans personnage
+-- (is_game_master = true, comme create-group depuis
+-- 20261016090000_group_members_orphan_character.sql).
+insert into public.group_members (group_id, character_id, user_id, role, is_game_master)
+values ('88888888-8888-8888-8888-888888888881', null, '77777777-7777-7777-7777-777777777771', 'owner', true);
 
 -- player1 rejoint le même groupe avec son personnage, comme le ferait
 -- join-group pour un membre normal.
 insert into public.group_members (group_id, character_id, user_id, role)
 values ('88888888-8888-8888-8888-888888888881', '99999999-9999-9999-9999-999999999991', '77777777-7777-7777-7777-777777777772', 'membre');
 
--- Test 1 : un deuxième membre SANS personnage dans le même groupe doit être
--- rejeté par l'index unique partiel group_members_one_null_character_per_group
--- ("un seul MJ sans personnage par groupe").
+-- Test 1 : un deuxième MJ SANS personnage dans le même groupe doit être
+-- rejeté par l'index unique partiel group_members_one_game_master_per_group
+-- ("un seul MJ sans personnage par groupe"). Depuis
+-- 20261016090000_group_members_orphan_character.sql, cet index ne porte
+-- plus que sur is_game_master = true (un membre orphelin, is_game_master =
+-- false, est autorisé en plusieurs exemplaires) : les deux lignes sont donc
+-- des MJ volontaires, comme join-group les écrit.
 select throws_ok(
-  $$ insert into public.group_members (group_id, character_id, user_id, role)
-     values ('88888888-8888-8888-8888-888888888881', null, '77777777-7777-7777-7777-777777777773', 'membre') $$,
+  $$ insert into public.group_members (group_id, character_id, user_id, role, is_game_master)
+     values ('88888888-8888-8888-8888-888888888881', null, '77777777-7777-7777-7777-777777777773', 'membre', true) $$,
   '23505',
   null,
   'Un deuxième membre sans personnage dans le même groupe doit être rejeté (au plus un MJ sans personnage par groupe)'
