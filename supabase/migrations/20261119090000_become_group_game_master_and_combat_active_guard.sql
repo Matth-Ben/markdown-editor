@@ -39,15 +39,24 @@
 --
 -- CONCURRENCE (lectures en READ COMMITTED, niveau par défaut de PostgREST)
 --   start_combat verrouille la ligne `groups` (FOR NO KEY UPDATE) avant de vérifier le MJ et d'insérer le combat. Les trois
---   chemins de cette migration prennent un verrou en conflit sur la MÊME ligne avant de regarder les combats :
---   - become_group_game_master : FOR NO KEY UPDATE explicite ;
---   - trigger de `group_members` (ligne du propriétaire seulement) : FOR NO KEY UPDATE explicite ;
+--   chemins de cette migration prennent un verrou EN CONFLIT avec celui-là sur la MÊME ligne avant de regarder les combats :
+--   - become_group_game_master : FOR SHARE explicite ;
+--   - trigger de `group_members` (ligne du propriétaire seulement) : FOR SHARE explicite ;
 --   - trigger de `groups` : la ligne est déjà verrouillée (FOR UPDATE) par le DELETE lui-même avant le trigger.
 --   Le contrôle est ensuite fait par une instruction distincte (fonction VOLATILE, nouvel instantané) : soit start_combat a
 --   validé avant et son combat est vu (`combat_active`), soit il attend le verrou puis relit l'état validé (`no_game_master`
---   si le propriétaire est parti, `group_not_found` si le groupe est dissous). Deadlock possible (40P01, détecté par
---   PostgreSQL, rejouable) entre le départ du propriétaire et une dissolution simultanée du même groupe (ordres de verrous
---   group_members -> groups et groups -> group_members), même classe que ceux déjà documentés par la PR #47.
+--   si le propriétaire est parti, `group_not_found` si le groupe est dissous).
+--   Pourquoi FOR SHARE et pas FOR NO KEY UPDATE : la RPC verrouille `groups` PUIS la ligne de membre, alors que le départ du
+--   propriétaire verrouille la ligne de membre (DELETE) PUIS `groups` (trigger) ; l'ordre ne peut pas être inversé côté
+--   départ (un trigger BEFORE DELETE s'exécute après le verrou de la ligne supprimée). Deux FOR SHARE étant compatibles, ces
+--   deux chemins ne s'attendent plus sur `groups` et se départagent sur la seule ligne de membre : pas de deadlock (un
+--   « Devenir MJ » et un « Quitter » simultanés du même propriétaire produisaient un 40P01 avec FOR NO KEY UPDATE, reproduit
+--   sur Postgres 17 avant correction). FOR SHARE reste en conflit avec start_combat (FOR NO KEY UPDATE) et la dissolution
+--   (FOR UPDATE), seuls cas à sérialiser.
+--   Deadlock résiduel (40P01, détecté par PostgreSQL en ~1 s, transaction annulée sans effet, rejouable) : départ du
+--   propriétaire et dissolution simultanés du même groupe (group_members -> groups contre groups -> group_members, ordre
+--   imposé par le DELETE et la cascade), même classe que ceux déjà documentés par la PR #47. Contrat client : sur 40P01 ou
+--   40001, afficher « Réessayez ».
 --   Non couvert : une transaction cliente en REPEATABLE READ / SERIALIZABLE (aucun client ne le fait aujourd'hui).
 --
 -- CE QUE « DEVENIR MJ » FAIT AU PERSONNAGE (relecture de toutes les tables qui lient un groupe et un personnage)
@@ -167,8 +176,9 @@ begin
     return old;
   end if;
 
-  -- Même verrou que start_combat et become_group_game_master, puis contrôle par une instruction distincte.
-  perform 1 from public.groups g where g.id = old.group_id for no key update;
+  -- FOR SHARE sur le groupe : en conflit avec start_combat (FOR NO KEY UPDATE) et la dissolution, compatible avec
+  -- become_group_game_master (pas de deadlock, voir CONCURRENCE) ; puis contrôle par une instruction distincte.
+  perform 1 from public.groups g where g.id = old.group_id for share;
   perform public.group_assert_no_active_combat(old.group_id);
   return old;
 end;
@@ -186,7 +196,7 @@ create trigger group_members_before_delete_combat_guard
 -- Idempotent : déjà MJ sans personnage, la ligne est renvoyée telle quelle, sans écriture, y compris pendant un combat (rien
 -- ne change, donc aucun personnage ne quitte le combat).
 --
--- Choix d'une RPC SQL plutôt qu'une edge function : une seule transaction avec le verrou de start_combat (pas de fenêtre
+-- Choix d'une RPC SQL plutôt qu'une edge function : une seule transaction sérialisée avec start_combat (pas de fenêtre
 -- entre la vérification « combat actif » et l'écriture), même contrôle partagé que les triggers, même convention d'erreurs
 -- que les RPC de combat (PR #47), testable en pgTAP, rien à déployer à part la migration.
 --
@@ -222,9 +232,11 @@ begin
     raise exception 'not_group_owner' using errcode = '42501';
   end if;
 
-  -- Même verrou que start_combat (FOR NO KEY UPDATE sur la ligne du groupe) : sérialise avec un lancement de combat, le
-  -- départ du propriétaire et un second appel concurrent.
-  perform 1 from public.groups g where g.id = p_group_id for no key update;
+  -- FOR SHARE sur la ligne du groupe : en conflit avec start_combat (FOR NO KEY UPDATE) et la dissolution (FOR UPDATE),
+  -- compatible avec le trigger de départ du propriétaire (FOR SHARE), qui verrouille sa ligne de membre AVANT le groupe :
+  -- la RPC et le départ se départagent sur la ligne de membre ci-dessous, sans deadlock (voir CONCURRENCE). Deux appels
+  -- concurrents se sérialisent aussi sur cette ligne (le second voit la ligne déjà MJ : idempotent).
+  perform 1 from public.groups g where g.id = p_group_id for share;
   if not found then
     raise exception 'group_not_found' using errcode = 'P0002';
   end if;
