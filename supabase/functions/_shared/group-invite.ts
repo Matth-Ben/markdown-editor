@@ -42,26 +42,73 @@ export interface GroupInviteRow {
   owner_id: string;
 }
 
-export type FindGroupResult =
-  | { group: GroupInviteRow }
+/** Ligne lue par preview-group-invite : le titre de la campagne en plus
+ * (décision n° 33 du 19/11/2026), `null` si aucune campagne n'est associée.
+ * Jamais `story_summary_public`, réservé aux membres. */
+export interface GroupInvitePreviewRow extends GroupInviteRow {
+  story_title: string | null;
+}
+
+export type FindGroupResult<Row = GroupInviteRow> =
+  | { group: Row }
   | { errorResponse: Response };
 
 /** Cherche un groupe par invite_code. Utilisé par join-group (avant de
- * vérifier/rattacher un personnage) et preview-group-invite (qui s'arrête
- * là). `admin` doit être un client service_role : invite_code n'est jamais
- * lisible via une policy select cliente (20260906182601_create_groups.sql,
- * "Pas de policy INSERT pour authenticated"). Contrairement à
- * findJoinableStory, aucune notion de désactivation -- un groupe créé a
- * toujours un code actif, voir le commentaire d'en-tête. */
-export async function findJoinableGroup(
+ * vérifier/rattacher un personnage). `admin` doit être un client
+ * service_role : l'appelant n'est pas encore membre du groupe, et les
+ * policies SELECT de `groups` ne donnent la ligne qu'à son propriétaire et à
+ * ses membres ("Owner can select their groups", "Member can select their
+ * groups", 20260906182601_create_groups.sql). invite_code n'est donc pas
+ * lisible par un non-membre ; il l'est en revanche par TOUT membre (la
+ * policy membre donne la ligne entière, Nexus et Grimoire l'affichent) :
+ * c'est voulu, les membres peuvent partager le code (décision de Matthias du
+ * 15/11/2026, dette D227 du dépôt mobile).
+ * Seules id, name et owner_id sont lues ici, et join-group ne renvoie que
+ * l'id et le nom : ni invite_code, ni story_title/story_summary_public
+ * (20261119120000) ne sortent. Sélection volontairement inchangée : un
+ * déploiement de join-group ne dépend pas de la migration 20261119120000.
+ * Contrairement à findJoinableStory, aucune notion de désactivation -- un
+ * groupe créé a toujours un code actif, voir le commentaire d'en-tête. */
+export function findJoinableGroup(
   admin: SupabaseClient,
   code: string,
-): Promise<FindGroupResult> {
+): Promise<FindGroupResult<GroupInviteRow>> {
+  return findGroupByInviteCode<GroupInviteRow>(
+    admin,
+    code,
+    "id, name, owner_id",
+  );
+}
+
+/** Variante de findJoinableGroup pour preview-group-invite : lit aussi
+ * `story_title` (décision n° 33 du 19/11/2026), que l'aperçu montre à tout
+ * compte connecté qui a le code, AVANT qu'il soit membre. Jamais
+ * `story_summary_public`, ni invite_code. Dépend de la migration
+ * 20261119120000 : sans la colonne, PostgREST répond 42703 et l'aperçu
+ * renvoie 500 (internal_error) à tout le monde -- d'où l'ordre « migration,
+ * puis déploiement de preview-group-invite ». Mêmes erreurs que
+ * findJoinableGroup. */
+export function findGroupPreviewByInviteCode(
+  admin: SupabaseClient,
+  code: string,
+): Promise<FindGroupResult<GroupInvitePreviewRow>> {
+  return findGroupByInviteCode<GroupInvitePreviewRow>(
+    admin,
+    code,
+    "id, name, owner_id, story_title",
+  );
+}
+
+async function findGroupByInviteCode<Row>(
+  admin: SupabaseClient,
+  code: string,
+  columns: string,
+): Promise<FindGroupResult<Row>> {
   const { data: group, error } = await admin
     .from("groups")
-    .select("id, name, owner_id")
+    .select(columns)
     .eq("invite_code", code)
-    .maybeSingle();
+    .maybeSingle<Row>();
 
   if (error) {
     console.error("group-invite: erreur de lecture groups", error);

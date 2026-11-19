@@ -152,14 +152,41 @@ Deno.test({
       const playerEmail = `preview-group-invite-test-player-${suffix}@example.invalid`;
       const playerToken = await signIn(playerEmail);
 
-      await t.step("code valide -> 200 { name, member_count }, sans character_id", async () => {
-        const res = await callPreview({ code: soloCode }, playerToken);
-        assertEquals(res.status, 200);
-        const body = await res.json();
-        assertEquals(body.name, `Groupe solo ${suffix}`);
-        assertEquals(body.member_count, 1);
-        assertEquals("character_id" in body, false);
-      });
+      await t.step(
+        "code valide -> 200 { name, member_count, story_title: null } sans campagne, sans character_id",
+        async () => {
+          const res = await callPreview({ code: soloCode }, playerToken);
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          assertEquals(body.name, `Groupe solo ${suffix}`);
+          assertEquals(body.member_count, 1);
+          assertEquals(body.story_title, null);
+          assertEquals("character_id" in body, false);
+          assertEquals(Object.keys(body).sort(), ["member_count", "name", "story_title"]);
+        },
+      );
+
+      // Décision n° 33 du 19/11/2026 (migration 20261119120000) : l'aperçu
+      // montre le TITRE de la campagne à un non-membre qui a le code, jamais
+      // le résumé public (réservé aux membres) ni le code d'invitation.
+      await t.step(
+        "groupe associé à une campagne -> story_title renvoyé à un non-membre, jamais le résumé",
+        async () => {
+          await sql`
+            update public.groups
+               set story_title = ${`Les Mines de Phandelver ${suffix}`},
+                   story_summary_public = 'Accroche réservée aux membres'
+             where id = ${trioGroupId}
+          `;
+          const res = await callPreview({ code: trioCode }, playerToken);
+          assertEquals(res.status, 200);
+          const body = await res.json();
+          assertEquals(body.story_title, `Les Mines de Phandelver ${suffix}`);
+          assertEquals("story_summary_public" in body, false);
+          assertEquals("invite_code" in body, false);
+          assertEquals(Object.keys(body).sort(), ["member_count", "name", "story_title"]);
+        },
+      );
 
       await t.step("member_count reflète tous les membres du groupe", async () => {
         const res = await callPreview({ code: trioCode }, playerToken);
