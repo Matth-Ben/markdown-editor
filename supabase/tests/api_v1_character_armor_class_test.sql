@@ -11,7 +11,7 @@
 
 begin;
 
-select plan(75);
+select plan(80);
 
 -- Fixtures ----------------------------------------------------------------------------------------------------------------------
 insert into auth.users (
@@ -426,6 +426,49 @@ select pg_temp.give('ARM1', 'Cotte de mailles');
 select pg_temp.give('ARM1', 'Bracelets de défense', p_attuned => true);
 select pg_temp.give('ARM1', 'Anneau de protection', p_attuned => true);
 select is(pg_temp.ac('ARM1'), 17, 'Cotte 16 + bracelets (ignorés avec armure) + anneau (+1) -> 17');
+
+-- Branches sans objet du catalogue aujourd'hui : objets factices créés dans la transaction (annulée à la fin) -------------
+create function pg_temp.fake_item(p_name text, p_ac_base integer, p_slot text, p_ac_bonus integer, p_kind text)
+returns integer
+language plpgsql as $$
+declare
+  v_id integer;
+begin
+  insert into public.items (category, requires_attunement, ac_bonus, ac_bonus_kind)
+  values ('objet_magique', false, p_ac_bonus, p_kind)
+  returning id into v_id;
+  insert into public.armor_properties (item_id, ac_base, ac_dex_bonus, slot) values (v_id, p_ac_base, 'illimite', p_slot);
+  insert into public.translations (entity_type, entity_id, field_name, locale, value) values ('item', v_id::text, 'name', 'fr', p_name);
+  return v_id;
+end;
+$$;
+select pg_temp.fake_item('pgTAP bouclier base sans armure', 2, 'bouclier', 15, 'base_sans_armure');
+select pg_temp.fake_item('pgTAP bouclier avec armure', 2, 'bouclier', 1, 'avec_armure');
+
+-- Bouclier portant un ac_bonus 'base_sans_armure' 15 (sans harmonisation), Dex 14. Dart : equippedShield = ce bouclier ;
+-- boucle : 'base_sans_armure' quand equippedArmor == null -> base candidate 15 + 2 = 17 ; max(12, 17) + bouclier 2 = 19.
+select pg_temp.new_char('FBS', '{"dex": 14}');
+select pg_temp.give('FBS', 'pgTAP bouclier base sans armure');
+select is(pg_temp.ac('FBS'), 19, 'Bouclier avec bonus « base sans armure » 15, sans armure -> 19 (17 + bouclier 2)');
+-- Avec une cuirasse : branche « avec armure », la base candidate n'est jamais lue : 14 + 2 + bouclier 2 = 18.
+select pg_temp.give('FBS', 'Cuirasse');
+select is(pg_temp.ac('FBS'), 18, 'Même bouclier avec une cuirasse -> 18 (base sans armure ignorée)');
+
+-- Bouclier portant un ac_bonus 'avec_armure' +1, Dex 14. Sans armure : cas 'avec_armure' non appliqué
+-- (equippedArmor == null) : 12 + 2 = 14. Avec une cuirasse : 14 + 2 + bouclier 2 + 1 = 19.
+select pg_temp.new_char('FBA', '{"dex": 14}');
+select pg_temp.give('FBA', 'pgTAP bouclier avec armure');
+select is(pg_temp.ac('FBA'), 14, 'Bouclier avec bonus « avec armure » +1, sans armure -> 14 (bonus ignoré)');
+select pg_temp.give('FBA', 'Cuirasse');
+select is(pg_temp.ac('FBA'), 19, 'Même bouclier avec une cuirasse -> 19 (bonus « avec armure » du bouclier compté)');
+
+-- Armure personnalisée sans catégorie (refusée aujourd'hui par la contrainte, retirée ici le temps du test) :
+-- customArmorPropertiesOf renvoie null (catégorie inconnue), l'objet n'est ni armure ni bouclier, son bonus magique n'est
+-- jamais lu (_magicBonusOf ne lit que l'armure retenue) : Dex 14 -> 12.
+alter table public.character_inventory drop constraint character_inventory_custom_armor_requires_ac_and_category;
+select pg_temp.new_char('NOCAT', '{"dex": 14}');
+select pg_temp.give_custom('NOCAT', 'armure', 15, null, 2);
+select is(pg_temp.ac('NOCAT'), 12, 'Armure perso 15 +2 sans catégorie -> 12 (ignorée, comme Nexus)');
 
 select is(
   (select count(*)::int from private.character_armor_class('ac000000-0000-4000-8000-0000000000ff')),
