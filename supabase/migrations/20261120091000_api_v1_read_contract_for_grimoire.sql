@@ -13,8 +13,9 @@
 --
 -- EFFET
 --   1. Schéma `api_v1` (premier schéma d'API versionné) : USAGE à `authenticated` seulement, jamais à `anon` ni PUBLIC.
---      Il doit être ajouté aux « Exposed schemas » (tableau de bord > Settings > API) APRÈS cette migration : réglage manuel
---      de Matthias (supabase/config.toml le fait pour la pile locale).
+--      Il doit être ajouté aux « Exposed schemas » (tableau de bord > Settings > API) APRÈS cette migration, jamais avant :
+--      un schéma exposé absent fait tomber toute l'API (503 PGRST002, observé en local). Réglage manuel de Matthias
+--      (supabase/config.toml le fait pour la pile locale).
 --   2. `api_v1.my_gm_groups()` : les groupes dont l'appelant est PROPRIÉTAIRE (avec ou sans ligne de membre), avec compteurs
 --      et indicateurs « MJ » (liste « Associer un groupe existant » et proposition « Devenir MJ » de Grimoire).
 --   3. `api_v1.group_snapshot(p_group_id, p_known_fingerprint)` : instantané d'un groupe en un appel (groupe, membres, résumé
@@ -60,8 +61,9 @@
 -- l'app web, les edge functions ; aucune table, politique, vue, publication ni privilège existant modifié.
 --
 -- RETOUR ARRIÈRE (aucune donnée en jeu)
---   1. D'ABORD retirer `api_v1` des « Exposed schemas » (tableau de bord > Settings > API), sinon PostgREST référence un schéma
---      absent.
+--   1. D'ABORD retirer `api_v1` des « Exposed schemas » (tableau de bord > Settings > API). Sinon PostgREST ne charge plus son
+--      cache et TOUTE l'API tombe, Nexus compris (observé sur la pile locale, PostgREST 14.15 : 503 PGRST002 sur toutes les
+--      requêtes, schéma public compris, jusqu'à la recréation du schéma).
 --   2. Puis, dans UNE transaction :
 --        begin;
 --        drop function if exists api_v1.group_snapshot(uuid, text);

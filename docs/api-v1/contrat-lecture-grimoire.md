@@ -224,8 +224,10 @@ Aujourd'hui, Nexus charge le même écran en 6 requêtes et environ 70 Ko (inven
   l'instantané périodiquement (par exemple toutes les 60 s tant que l'écran est ouvert ; 113 octets si rien n'a changé).
   Les tables filles (inventaire, classes…) ne sont pas publiées : un changement d'équipement seul n'émet rien, d'où la
   relecture périodique dans tous les cas.
-- **Erreurs** : `group_not_found` = groupe dissous ou accès perdu (passer le lien local à « orphelin », ne rien supprimer
-  localement) ; `not_group_owner` = le compte n'est plus propriétaire.
+- **Erreurs** : **seul** `group_not_found` (`code` `P0002`) = groupe dissous ou accès perdu : passer le lien local à
+  « orphelin », ne rien supprimer localement. `not_group_owner` = le compte n'est plus propriétaire : garder le lien, le
+  signaler. Toute autre erreur (`PGRST106` schéma non exposé, `PGRST202` fonction absente, `PGRST002` API indisponible,
+  réseau) : garder le lien et la copie en cache, réessayer plus tard (README, « Réaction du client »).
 
 ## 4. Calcul de la CA
 
@@ -267,8 +269,8 @@ foi »), écarts aux règles officielles compris (dette D234 du dépôt mobile :
 
 ## 6. Ce qui n'est pas vérifié
 
-- L'appel HTTP réel par PostgREST : la pile locale n'a pas été redémarrée (la liste des schémas exposés n'est relue qu'au
-  démarrage des conteneurs), les statuts HTTP du README sont ceux du code de PostgREST, pas une mesure.
+- Le statut HTTP de `not_authenticated` (jeton sans utilisateur) : les autres statuts du README sont mesurés par appel HTTP
+  réel sur la pile locale (PostgREST 14.15).
 - L'état de la production (rejoué localement à partir des migrations seulement) ; les durées et tailles sont celles de la
   pile locale.
 - La parité avec le code Dart est établie par la lecture du calculateur et les cas de `regles-dnd`, pas par l'exécution
