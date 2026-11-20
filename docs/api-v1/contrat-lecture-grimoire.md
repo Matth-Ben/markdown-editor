@@ -2,7 +2,7 @@
 
 Étape 5 de `FEUILLE-DE-ROUTE.md` (Grimoire, branche `dev/nexus-desktop`), lancée le 20/11/2026. Migrations :
 `20261120090000_private_character_armor_class.sql` (calcul de la CA) et `20261120091000_api_v1_read_contract_for_grimoire.sql`
-(schéma `api_v1` et les deux fonctions). Tests : `supabase/tests/api_v1_character_armor_class_test.sql` (70 assertions) et
+(schéma `api_v1` et les deux fonctions). Tests : `supabase/tests/api_v1_character_armor_class_test.sql` (75 assertions) et
 `supabase/tests/api_v1_read_contract_test.sql` (73 assertions). Règles communes (exposition, appel, erreurs, versionnage) :
 [README.md](README.md).
 
@@ -162,9 +162,9 @@ Contrat **fermé** : aucune autre clé n'est servie. Toutes les clés sont toujo
 | `character.current_hp`, `max_hp`, `temporary_hp` | entiers | PV de la fiche |
 | `character.is_dead` | booléen | État « mort » posé par le joueur |
 | `character.conditions` | tableau de textes | Clés d'état de Nexus (`blinded`, `poisoned`, `prone`…), triées, sans doublon |
-| `character.armor_class` | entier | CA calculée, **sans** l'ajustement manuel (valeur de la fiche Nexus) |
-| `character.armor_class_bonus` | entier | Ajustement manuel du joueur, positif ou négatif |
-| `character.armor_class_total` | entier | `armor_class + armor_class_bonus` (valeur de l'écran Groupe de Nexus) |
+| `character.armor_class` | entier | CA calculée, **sans** l'ajustement manuel : `CharacterDetail.armorClass` de Nexus (fiche du personnage, qui affiche l'ajustement à part). **Ne pas l'afficher seule** |
+| `character.armor_class_bonus` | entier | Ajustement manuel du joueur (`characters.armor_class_bonus`), positif ou négatif |
+| `character.armor_class_total` | entier | `armor_class + armor_class_bonus` : `GroupMember.armorClass` de Nexus (tuile du groupe). **C'est la CA que Grimoire affiche** |
 
 Les noms de classe, sous-classe et race sont en **français** (comme l'écran Groupe de Nexus). Une langue au choix serait un
 paramètre ajouté plus tard (changement compatible).
@@ -213,6 +213,8 @@ Aujourd'hui, Nexus charge le même écran en 6 requêtes et environ 70 Ko (inven
 
 ### 3.6 Utilisation recommandée par Grimoire
 
+- **CA affichée** (jetons, liste des joueurs) : **`armor_class_total`**, la même valeur que la tuile du groupe dans Nexus.
+  Jamais `armor_class` seule (voir §4).
 - **Cache** : garder la dernière réponse complète avec son empreinte et sa date dans les tables `nexus_*`, séparées du
   contenu, **jamais** dans les exports. Hors ligne : afficher cette copie avec sa date.
 - **Relecture** : à l'ouverture de l'écran, à la reconnexion, et sur tout événement temps réel du groupe (anti-rebond
@@ -236,13 +238,20 @@ foi »), écarts aux règles officielles compris (dette D234 du dépôt mobile :
   combat », objets **équipés** du catalogue (armure, bouclier, bonus magiques) et personnalisés (type, CA de base,
   catégorie, bonus magique, harmonisation).
 - Ne sont pas lus : quantité, race, niveaux, états, Force, édition.
-- **Décision n° 37** : avec deux armures ou deux boucliers équipés, la combinaison qui donne la **meilleure CA** est retenue.
-  Conséquence de la règle écrite, testée et à reproduire par Nexus : le bonus « toujours » d'une seconde armure équipée mais
-  non retenue compte quand même (écailles de dragon harmonisées + armure complète, Dex 16 : 18 + 1 = **19**).
-- Sorties séparées : `armor_class` (sans ajustement), `armor_class_bonus`, `armor_class_total`.
-- Parité : les cas C1 à C27 de `regles-dnd` (47 assertions) et 19 sous-cas de plus (décision n° 37, données non lues,
-  cas limites) sont dans `supabase/tests/api_v1_character_armor_class_test.sql`, avec les objets réels du catalogue retrouvés par leur nom
-  français : si un nom change dans le catalogue, ces tests échouent.
+- **Décision n° 37** : avec deux armures ou deux boucliers équipés, la combinaison qui donne la **meilleure CA** est retenue,
+  bonus compris. L'armure ou le bouclier **non retenu ne donne rien** : ni base, ni bonus magique, ni `ac_bonus` d'aucun type,
+  y compris « toujours » (lecture RAW confirmée par `regles-dnd` le 20/11/2026 : on ne porte qu'une armure). Exemple testé :
+  écailles de dragon harmonisées (14, +1 « toujours ») + armure complète (18), Dex 16 : **18**. Avec une seule armure et un
+  seul bouclier, le résultat est celui du calcul actuel de Nexus. À reproduire par Nexus quand il appliquera la décision n° 37.
+- **Quelle valeur afficher** : `armor_class_total`, comme la tuile du groupe dans Nexus (`GroupMember.armorClass`). Piège de
+  nommage : `armor_class` correspond à `CharacterDetail.armorClass` de Nexus, la CA de la fiche **sans** l'ajustement manuel
+  (la fiche montre l'ajustement à part). Afficher `armor_class` seule donnerait une CA fausse dès qu'un joueur a saisi un
+  ajustement.
+- Parité : les cas C1 à C27 de `regles-dnd` (47 assertions) et 24 sous-cas de plus (décision n° 37, données non lues, cas
+  limites, dont 4 demandés par `regles-dnd` : « avec armure » avec un bouclier seul, Lignage draconique en armure, bouclier
+  personnalisé non harmonisé, Anneau et Cape de protection cumulés) sont dans
+  `supabase/tests/api_v1_character_armor_class_test.sql`, avec les objets réels du catalogue retrouvés par leur nom français :
+  si un nom change dans le catalogue, ces tests échouent.
 
 ## 5. Portraits
 

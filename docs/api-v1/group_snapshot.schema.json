@@ -98,9 +98,18 @@
         "temporary_hp": { "type": "integer" },
         "is_dead": { "type": "boolean" },
         "conditions": { "type": "array", "items": { "type": "string" } },
-        "armor_class": { "type": "integer" },
-        "armor_class_bonus": { "type": "integer" },
-        "armor_class_total": { "type": "integer" }
+        "armor_class": {
+          "type": "integer",
+          "description": "CA calculée SANS l'ajustement manuel (CharacterDetail.armorClass de Nexus, fiche). Ne pas l'afficher seule."
+        },
+        "armor_class_bonus": {
+          "type": "integer",
+          "description": "Ajustement manuel du joueur (characters.armor_class_bonus), positif ou négatif."
+        },
+        "armor_class_total": {
+          "type": "integer",
+          "description": "armor_class + armor_class_bonus (GroupMember.armorClass de Nexus, tuile du groupe) : la CA que Grimoire affiche."
+        }
       }
     }
   }
