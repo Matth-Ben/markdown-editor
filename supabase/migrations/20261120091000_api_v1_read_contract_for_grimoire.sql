@@ -101,7 +101,7 @@ create schema if not exists api_v1;
 -- Garde-fou de dérive : un schéma api_v1 préexistant (créé hors migrations) doit appartenir au rôle qui applique la migration.
 do $drift$
 begin
-  if (select n.nspowner from pg_namespace n where n.nspname = 'api_v1') <> (select oid from pg_roles where rolname = current_user) then
+  if (select n.nspowner from pg_namespace n where n.nspname = 'api_v1') is distinct from (select oid from pg_roles where rolname = current_user) then
     raise exception 'api_v1 existe déjà avec un autre propriétaire : rien n''est appliqué, vérifier l''état de la base';
   end if;
 end
@@ -113,6 +113,12 @@ comment on schema api_v1 is
 revoke all on schema api_v1 from public;
 revoke all on schema api_v1 from anon;
 grant usage on schema api_v1 to authenticated;
+-- Pas d'`alter default privileges ... in schema api_v1 revoke execute on functions from public` : un REVOKE par schéma ne
+-- retire pas un privilège accordé globalement, et l'EXECUTE de PUBLIC sur les fonctions est le défaut intégré de Postgres
+-- (vérifié sur la pile locale : aucune entrée pg_default_acl créée, une nouvelle fonction reste exécutable par anon et
+-- PUBLIC). La version globale (sans IN SCHEMA) toucherait toutes les fonctions futures de tous les schémas : hors périmètre.
+-- Protections réelles : aucun USAGE pour anon ni PUBLIC sur le schéma, REVOKE explicite à chaque fonction, et un test pgTAP
+-- (api_v1_read_contract_test.sql) qui échoue si UNE fonction de api_v1 est exécutable par PUBLIC ou anon.
 
 -- 2. my_gm_groups ---------------------------------------------------------------------------------------------------------------
 -- Une ligne par groupe dont auth.uid() est groups.owner_id, triée par nom puis id.
@@ -212,7 +218,8 @@ begin
   if not found then
     raise exception 'group_not_found' using errcode = 'P0002';
   end if;
-  if v_owner <> v_uid then
+  -- IS DISTINCT FROM, jamais <> : une comparaison avec NULL vaudrait NULL et sauterait le refus.
+  if v_owner is distinct from v_uid then
     if public.is_group_member(p_group_id) then
       raise exception 'not_group_owner' using errcode = '42501';
     end if;
@@ -233,13 +240,13 @@ begin
           select
             m.id,
             m.joined_at,
-            m.user_id = g.owner_id as is_owner,
+            m.user_id is not distinct from g.owner_id as is_owner,
             jsonb_build_object(
               'membership_id', m.id,
               'user_id', m.user_id,
               'display_name', public.group_members_display_name(m),
               'role', m.role,
-              'is_owner', m.user_id = g.owner_id,
+              'is_owner', m.user_id is not distinct from g.owner_id,
               'is_game_master', m.is_game_master,
               'character', case when c.id is null then null else jsonb_build_object(
                 'id', c.id,

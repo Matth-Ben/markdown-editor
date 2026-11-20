@@ -16,7 +16,7 @@
 
 begin;
 
-select plan(73);
+select plan(76);
 
 -- Fixtures (insérées en tant que postgres, qui contourne la RLS) ------------------------------------------------------------------
 -- u01 Olga : propriétaire de G1 (ligne MJ sans personnage, pseudo blanc) et de G7
@@ -504,6 +504,27 @@ select is(
   0,
   'group_snapshot.group.has_game_master = group_has_gm'
 );
+
+-- Propriétaire NULL (hypothétique : groups.owner_id est NOT NULL aujourd'hui) -----------------------------------------------------
+-- Si owner_id devenait nullable, `v_owner <> v_uid` vaudrait NULL et sauterait le refus : la fonction compare par
+-- IS DISTINCT FROM. NOT NULL retiré dans la transaction du test seulement (annulée à la fin).
+alter table public.groups alter column owner_id drop not null;
+insert into public.groups (id, name, owner_id, invite_code)
+values ('a6000000-0000-4000-8000-000000000008', 'pgTAP api_v1 G8 (sans propriétaire)', null, 'PGTAPAV8');
+insert into public.group_members (group_id, character_id, user_id, role)
+values ('a6000000-0000-4000-8000-000000000008', 'a7000000-0000-4000-8000-000000000003', 'a5000000-0000-4000-8000-000000000003', 'membre');
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'a5000000-0000-4000-8000-000000000003', 'role', 'authenticated')::text, true);
+select throws_ok($$ select api_v1.group_snapshot('a6000000-0000-4000-8000-000000000008') $$, '42501', 'not_group_owner',
+  'Propriétaire NULL, appelant membre : not_group_owner (refus jamais sauté)');
+select is((select count(*)::int from api_v1.my_gm_groups() r where r.id = 'a6000000-0000-4000-8000-000000000008'), 0,
+  'Propriétaire NULL : le groupe n''est dans la liste de personne');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'a5000000-0000-4000-8000-000000000010', 'role', 'authenticated')::text, true);
+select throws_ok($$ select api_v1.group_snapshot('a6000000-0000-4000-8000-000000000008') $$, 'P0002', 'group_not_found',
+  'Propriétaire NULL, appelant tiers : group_not_found');
+reset role;
 
 -- Aucune écriture ------------------------------------------------------------------------------------------------------------------
 select is(
