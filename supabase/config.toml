@@ -10,7 +10,9 @@ enabled = true
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
-schemas = ["public", "graphql_public"]
+# `api_v1` : API versionnée (20261120091000, docs/api-v1/). En production, réglage manuel du tableau de bord
+# (Settings > API > Exposed schemas), à faire APRÈS l'application de la migration et à retirer AVANT son retour arrière.
+schemas = ["public", "graphql_public", "api_v1"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
