@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deepcore.nexus-jdr/api-v1/group_snapshot.schema.json",
+  "title": "Réponse de api_v1.group_snapshot (v1)",
+  "description": "Voir docs/api-v1/contrat-lecture-grimoire.md. Les clients ignorent les clés inconnues (ajouts compatibles) : additionalProperties n'est pas restreint.",
+  "oneOf": [
+    {
+      "title": "Inchangé",
+      "type": "object",
+      "required": ["v", "unchanged", "fingerprint"],
+      "properties": {
+        "v": { "const": 1 },
+        "unchanged": { "const": true },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    {
+      "title": "Instantané complet",
+      "type": "object",
+      "required": ["v", "unchanged", "fingerprint", "group", "members"],
+      "properties": {
+        "v": { "const": 1 },
+        "unchanged": { "const": false },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "group": {
+          "type": "object",
+          "required": ["id", "name", "story_title", "story_summary_public", "has_game_master"],
+          "properties": {
+            "id": { "$ref": "#/$defs/uuid" },
+            "name": { "type": "string" },
+            "story_title": { "type": ["string", "null"], "maxLength": 200 },
+            "story_summary_public": { "type": ["string", "null"], "maxLength": 500 },
+            "has_game_master": { "type": "boolean" }
+          }
+        },
+        "members": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/member" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^v1:[0-9a-f]{64}$"
+    },
+    "member": {
+      "type": "object",
+      "required": ["membership_id", "user_id", "display_name", "role", "is_owner", "is_game_master", "character"],
+      "properties": {
+        "membership_id": { "$ref": "#/$defs/uuid" },
+        "user_id": { "$ref": "#/$defs/uuid" },
+        "display_name": { "type": ["string", "null"] },
+        "role": { "enum": ["owner", "membre"] },
+        "is_owner": { "type": "boolean" },
+        "is_game_master": { "type": "boolean" },
+        "character": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/character" }
+          ]
+        }
+      }
+    },
+    "character": {
+      "type": "object",
+      "required": [
+        "id", "name", "portrait_url", "race_name", "classes", "total_level", "current_hp", "max_hp", "temporary_hp",
+        "is_dead", "conditions", "armor_class", "armor_class_bonus", "armor_class_total"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "name": { "type": "string" },
+        "portrait_url": { "type": ["string", "null"] },
+        "race_name": { "type": ["string", "null"] },
+        "classes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["class_id", "class_name", "subclass_id", "subclass_name", "level"],
+            "properties": {
+              "class_id": { "type": "integer" },
+              "class_name": { "type": ["string", "null"] },
+              "subclass_id": { "type": ["integer", "null"] },
+              "subclass_name": { "type": ["string", "null"] },
+              "level": { "type": "integer" }
+            }
+          }
+        },
+        "total_level": { "type": "integer", "minimum": 0 },
+        "current_hp": { "type": "integer" },
+        "max_hp": { "type": "integer" },
+        "temporary_hp": { "type": "integer" },
+        "is_dead": { "type": "boolean" },
+        "conditions": { "type": "array", "items": { "type": "string" } },
+        "armor_class": { "type": "integer" },
+        "armor_class_bonus": { "type": "integer" },
+        "armor_class_total": { "type": "integer" }
+      }
+    }
+  }
+}
