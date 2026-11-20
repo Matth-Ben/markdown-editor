@@ -11,7 +11,7 @@
 
 begin;
 
-select plan(70);
+select plan(75);
 
 -- Fixtures ----------------------------------------------------------------------------------------------------------------------
 insert into auth.users (
@@ -337,8 +337,16 @@ select is(pg_temp.ac('C27m'), 17, 'C27 : Moine avec deux boucliers -> 17 (toujou
 select pg_temp.new_char('C27d', '{"dex": 16}');
 select pg_temp.give('C27d', 'Armure d''écailles de dragon', p_attuned => true);
 select pg_temp.give('C27d', 'Armure complète');
-select is(pg_temp.ac('C27d'), 19,
-  'C27 : écailles de dragon harmonisées + armure complète -> 19 (18 retenue, +1 « toujours » des écailles compte encore)');
+-- Armure non retenue : elle ne donne rien, pas même son ac_bonus « toujours » (regles-dnd, 20/11/2026). Combinaisons :
+-- écailles 14 + min(Dex 3, 2) + 1 = 17 ; armure complète 18 + 0 = 18 -> 18.
+select is(pg_temp.ac('C27d'), 18,
+  'C27 : écailles de dragon harmonisées + armure complète -> 18 (l''armure non retenue ne donne rien, ni son +1 « toujours »)');
+-- Le bonus de l'objet d'emplacement compte dans SA combinaison, et décide du choix : écailles 14 + 2 + 1 = 17 contre
+-- cuirasse 14 + 2 = 16 -> 17.
+select pg_temp.new_char('C27e', '{"dex": 16}');
+select pg_temp.give('C27e', 'Armure d''écailles de dragon', p_attuned => true);
+select pg_temp.give('C27e', 'Cuirasse');
+select is(pg_temp.ac('C27e'), 17, 'C27 : écailles harmonisées + cuirasse -> 17 (meilleure combinaison choisie bonus compris)');
 select pg_temp.new_char('C27c', '{"dex": 16}');
 select pg_temp.give('C27c', 'Cotte de mailles');
 select pg_temp.give_custom('C27c', 'armure', 12, 'legere', 3);
@@ -352,6 +360,29 @@ select pg_temp.give('C27a', 'Armure complète');
 select pg_temp.give('C27a', 'Armure de cuir');
 select pg_temp.give('C27a', 'Armure +1');
 select is(pg_temp.ac('C27a'), 19, 'C27 : deux armures + Armure +1 -> 19 (bonus « avec armure » compté une fois)');
+
+-- Compléments demandés par regles-dnd (20/11/2026), valeurs tirées de armor_class_calculator.dart --------------------------------
+-- Bouclier seul + Armure +1 : equippedArmor == null, donc le cas 'avec_armure' du switch ne s'applique pas ;
+-- sans armure : max(10 + 2) = 12, + bouclier 2 = 14.
+select pg_temp.new_char('AVB', '{"dex": 14}');
+select pg_temp.give('AVB', 'Bouclier');
+select pg_temp.give('AVB', 'Armure +1');
+select is(pg_temp.ac('AVB'), 14, 'Armure +1 avec un bouclier seul (sans armure) -> 14 (bonus « avec armure » ignoré)');
+-- Lignage draconique en armure de cuir : la branche « avec armure » retourne ac_base + Dex sans jamais lire les bases sans
+-- armure (13 + Dex) : 11 + 2 = 13 (et non 13 + 2 = 15).
+select pg_temp.new_char('DRA', '{"dex": 14}', p_subclass => 'Lignage draconique');
+select pg_temp.give('DRA', 'Armure de cuir');
+select is(pg_temp.ac('DRA'), 13, 'Lignage draconique en armure de cuir -> 13 (base draconique non appliquée)');
+-- Bouclier personnalisé 2, +2, harmonisation requise, non harmonisé : sa base compte toujours (shieldBonus = acBase), son
+-- bonus magique non (_magicBonusOf : _grantsMagicBonus faux) : 12 + 2 = 14.
+select pg_temp.new_char('CSH', '{"dex": 14}');
+select pg_temp.give_custom('CSH', 'bouclier', 2, null, 2, p_requires_attunement => true);
+select is(pg_temp.ac('CSH'), 14, 'Bouclier perso 2 +2 à harmoniser, non harmonisé -> 14 (base seule)');
+-- Anneau de protection et Cape de protection harmonisés : deux ac_bonus 'toujours' de +1 additionnés : 12 + 1 + 1 = 14.
+select pg_temp.new_char('ANC', '{"dex": 14}');
+select pg_temp.give('ANC', 'Anneau de protection', p_attuned => true);
+select pg_temp.give('ANC', 'Cape de protection', p_attuned => true);
+select is(pg_temp.ac('ANC'), 14, 'Anneau et Cape de protection harmonisés -> 14 (deux bonus « toujours » cumulés)');
 
 -- Données non lues et cas limites (parité avec le Dart) --------------------------------------------------------------------------
 select pg_temp.new_char('Q0', '{"dex": 14}');

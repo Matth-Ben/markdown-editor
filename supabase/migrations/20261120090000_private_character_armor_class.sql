@@ -30,14 +30,17 @@
 --     2. Armure = objet équipé avec propriétés d'armure et emplacement 'armure' ; bouclier = idem avec 'bouclier'.
 --        Plusieurs armures ou plusieurs boucliers équipés (décision n° 37 ; 0 fiche en production au 20/11/2026) : toutes les
 --        combinaisons (une armure x un bouclier) sont évaluées et la MEILLEURE CA est retenue (résultat unique, donc
---        déterministe). Une seule armure (ou un seul bouclier) équipée : elle est toujours retenue, même si s'en passer
---        donnerait plus (ex. Moine avec bouclier, comme Nexus).
+--        déterministe). L'objet NON retenu ne donne rien : ni base, ni bonus magique, ni ac_bonus d'aucun type, y compris
+--        'toujours' (lecture RAW confirmée par regles-dnd le 20/11/2026 : un bonus d'armure ne vaut que tant qu'on la porte,
+--        et on n'en porte qu'une). Une seule armure (ou un seul bouclier) équipée : elle est toujours retenue, même si s'en
+--        passer donnerait plus (ex. Moine avec bouclier, comme Nexus) ; le résultat est alors identique au Dart.
 --     3. Un objet « compte » s'il est équipé ET (sans harmonisation requise OU harmonisé).
---     4. Bonus d'objets = bonus magique de l'armure et du bouclier retenus s'ils comptent, + ac_bonus de CHAQUE objet équipé
+--     4. Bonus d'objets = bonus magique de l'armure et du bouclier retenus s'ils comptent, + ac_bonus de chaque objet équipé
 --        qui compte, selon ac_bonus_kind : 'toujours' ; 'avec_armure' si une armure est retenue ; 'sans_armure_ni_bouclier'
 --        sans armure ni bouclier ; 'base_sans_armure' devient une base candidate (bonus + Dex) sans armure ; autre ou absent :
---        ignoré. Conséquence assumée (texte de la règle) : l'ac_bonus « toujours » d'une seconde armure équipée mais non
---        retenue compte quand même (testé ; à reproduire tel quel par Nexus pour la décision n° 37).
+--        ignoré. L'ac_bonus d'un objet qui occupe l'emplacement d'armure ou de bouclier n'est compté que dans la combinaison
+--        qui le retient, et la meilleure combinaison est choisie bonus compris (écailles de dragon harmonisées + armure
+--        complète, Dex 16 : 18, pas 19). À reproduire tel quel par Nexus pour la décision n° 37.
 --     5. Avec armure : ac_base + Dex selon ac_dex_bonus ('aucun' 0, 'max_2' min(Dex, 2), 'illimite' Dex, autre 0)
 --        + 1 si Défense + bouclier + bonus d'objets.
 --     6. Sans armure : max(10 + Dex ; Barbare 10 + Dex + Con ; Moine SANS bouclier 10 + Dex + Sag ; Lignage draconique
@@ -48,9 +51,11 @@
 --   private.character_armor_class(p_character_id uuid)
 --     -> table (armor_class integer, armor_class_bonus integer, armor_class_total integer), une ligne, ou AUCUNE si le
 --        personnage n'existe pas.
---     armor_class        CA calculée ci-dessus, SANS l'ajustement manuel (c'est la valeur que la fiche Nexus affiche).
+--     armor_class        CA calculée ci-dessus, SANS l'ajustement manuel = CharacterDetail.armorClass de Nexus (la fiche, qui
+--                        affiche l'ajustement à part). Piège de nommage : ce n'est PAS la CA à afficher seule.
 --     armor_class_bonus  characters.armor_class_bonus (0 si NULL), ajustement manuel du joueur, positif ou négatif.
---     armor_class_total  armor_class + armor_class_bonus (valeur affichée par l'écran Groupe de Nexus).
+--     armor_class_total  armor_class + armor_class_bonus = GroupMember.armorClass de Nexus (tuile du groupe) : la CA que
+--                        Grimoire affiche.
 --   Cas de parité : supabase/tests/api_v1_character_armor_class_test.sql (C1 à C27 de regles-dnd, en sous-cas).
 --
 -- DROITS
@@ -165,22 +170,28 @@ as $$
      where ci.character_id = p_character_id
        and ci.equipped
   ),
+  -- Objets qui occupent un emplacement : chacun n'apporte sa base, son bonus magique et son ac_bonus (own_bonus, NULL s'il
+  -- ne « compte » pas) que dans SA combinaison, c'est-à-dire s'il est l'armure ou le bouclier retenu.
   armor_choices as (
-    select v.id, v.ac_base, v.ac_dex_bonus, case when v.counts then v.magic_bonus else 0 end as magic
+    select v.id, v.ac_base, v.ac_dex_bonus, case when v.counts then v.magic_bonus else 0 end as magic,
+           case when v.counts then v.ac_bonus end as own_bonus, v.ac_bonus_kind as own_kind
       from inv v
      where v.has_armor_properties and v.slot = 'armure'
     union all
-    select null::uuid, null::integer, null::text, 0
+    select null::uuid, null::integer, null::text, 0, null::integer, null::text
      where not exists (select 1 from inv v where v.has_armor_properties and v.slot = 'armure')
   ),
   shield_choices as (
-    select v.id, v.ac_base, case when v.counts then v.magic_bonus else 0 end as magic
+    select v.id, v.ac_base, case when v.counts then v.magic_bonus else 0 end as magic,
+           case when v.counts then v.ac_bonus end as own_bonus, v.ac_bonus_kind as own_kind
       from inv v
      where v.has_armor_properties and v.slot = 'bouclier'
     union all
-    select null::uuid, 0, 0
+    select null::uuid, 0, 0, null::integer, null::text
      where not exists (select 1 from inv v where v.has_armor_properties and v.slot = 'bouclier')
   ),
+  -- Autres objets équipés qui comptent (anneau, cape, bracelets, robe, « Armure +N »…) : bonus communs à toutes les
+  -- combinaisons. Les objets d'emplacement en sont exclus (comptés ci-dessus, dans leur combinaison seulement).
   bonuses as (
     select
       coalesce(sum(v.ac_bonus) filter (where v.ac_bonus_kind = 'toujours'), 0)::integer as always,
@@ -188,7 +199,9 @@ as $$
       coalesce(sum(v.ac_bonus) filter (where v.ac_bonus_kind = 'sans_armure_ni_bouclier'), 0)::integer as bare,
       max(v.ac_bonus) filter (where v.ac_bonus_kind = 'base_sans_armure') as unarmored_base
       from inv v
-     where v.counts and v.ac_bonus is not null
+     where v.counts
+       and v.ac_bonus is not null
+       and not (v.has_armor_properties and v.slot in ('armure', 'bouclier'))
   ),
   combos as (
     select
@@ -203,14 +216,21 @@ as $$
             case when n.barbarian then 10 + m.dex + m.con end,
             case when n.monk and s.id is null then 10 + m.dex + m.wis end,
             case when n.draconic then 13 + m.dex end,
-            b.unarmored_base + m.dex
+            b.unarmored_base + m.dex,
+            -- ac_bonus 'base_sans_armure' du bouclier retenu (aucun objet du catalogue aujourd'hui, même règle que Nexus).
+            case when s.own_kind = 'base_sans_armure' then s.own_bonus + m.dex end
           )
       end
       + s.ac_base
       + a.magic + s.magic
       + b.always
       + case when a.id is not null then b.with_armor else 0 end
-      + case when a.id is null and s.id is null then b.bare else 0 end as ac
+      + case when a.id is null and s.id is null then b.bare else 0 end
+      -- ac_bonus de l'armure et du bouclier retenus, selon leur type, évalué pour CETTE combinaison
+      -- ('sans_armure_ni_bouclier' ne peut jamais s'appliquer à un objet retenu, puisqu'il occupe un emplacement).
+      + coalesce(case when a.own_kind = 'toujours' or (a.own_kind = 'avec_armure' and a.id is not null) then a.own_bonus end, 0)
+      + coalesce(case when s.own_kind = 'toujours' or (s.own_kind = 'avec_armure' and a.id is not null) then s.own_bonus end, 0)
+      as ac
       from armor_choices a
      cross join shield_choices s
      cross join mods m
